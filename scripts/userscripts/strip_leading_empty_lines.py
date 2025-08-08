@@ -40,17 +40,6 @@ class StripLeadingEmptyLinesBot(ExistingPageBot):
         self.put_current(text, summary="Strip leading empty lines")
 
 
-# def main():
-#     site = pywikibot.Site()
-#     cat = pywikibot.Category(site, "Category:Software")
-#     gen = pagegenerators.CategorizedPageGenerator(cat)
-#     for page in gen:
-#         process(page)
-#
-#
-# process(pywikibot.Page(pywikibot.Site(), "User:Hamachitan/sandbox"))
-
-
 def main(*args: str) -> None:
     """Parse command line arguments and invoke bot."""
     options = {}
