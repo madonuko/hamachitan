@@ -37,7 +37,7 @@ class StripLeadingEmptyLinesBot(ExistingPageBot):
             i += 2
             continue
         text += page.text[i:]
-        self.put_current(text, summary="Strip leading empty lines")
+        self.put_current(text, summary="🍣 Strip leading empty lines")
 
 
 def main(*args: str) -> None:
