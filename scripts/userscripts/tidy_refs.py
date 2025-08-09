@@ -39,7 +39,7 @@ class TidyRefsBot(ExistingPageBot):
         self.put_current(str(wikicode), summary=self.opt.summary)
 
     def process_wikicode(self, wikicode: mw.wikicode.Wikicode) -> mw.wikicode.Wikicode:
-        for tag in wikicode.ifilter_tags(matches='ref'):
+        for tag in wikicode.ifilter_tags(matches=lambda tag: tag.tag == 'ref'):
             tag.contents = mw.parse(tag.contents.strip())
             if len(tag.contents.nodes) == 1 and isinstance(
                 tag.contents.nodes[0], mw.nodes.ExternalLink
