@@ -14,7 +14,10 @@ import pywikibot
 from pywikibot import pagegenerators
 from pywikibot.bot import ExistingPageBot
 
-RE_DOMAIN = re.compile(r'^.+?://([^/]+)/?')
+# RE_DOMAIN = re.compile(r'^.+?://([^/]+)/?')
+RE_WEBARCHIVE = re.compile(r'^https://web\.archive\.org/web/(\d{4})(\d{2})(\d{2})')
+
+REQ_HEADERS = {'User-Agent': 'atl.wiki/User:Hamachitan', 'From': 'mado@fyralabs.com'}
 
 
 class TidyRefsBot(ExistingPageBot):
@@ -41,12 +44,14 @@ class TidyRefsBot(ExistingPageBot):
             if len(tag.contents.nodes) == 1 and isinstance(
                 tag.contents.nodes[0], mw.nodes.ExternalLink
             ):
-                tag.contents = self.process_url(str(tag.contents))
+                tag.contents = self.process_url(str(tag.contents.nodes[0].url))
         return wikicode
 
     @staticmethod
     def format_date(date: str) -> str:
-        return dateparser.parse(date).strftime('%Y-%m-%d')
+        if date := dateparser.parse(date):
+            return date.strftime('%Y-%m-%d')
+        return ''
 
     def get_publish_date(self, req: requests.Request, soup: BeautifulSoup) -> str:
         """Extract publication date with fallback to year-only."""
@@ -56,10 +61,9 @@ class TidyRefsBot(ExistingPageBot):
         """Extract YYYY-MM-DD formatted date using common patterns."""
         # Priority 1: Standard meta tags
         meta_patterns = [
+            {'attr': 'name', 'val': 'lastmod'},
             {'attr': 'property', 'val': 'article:published_time'},
             {'attr': 'property', 'val': 'og:published_time'},
-            {'attr': 'name', 'val': 'dc.date'},
-            {'attr': 'name', 'val': 'date'},
             {'attr': 'itemprop', 'val': 'datePublished'},
             {'attr': 'name', 'val': 'article.published'},
             {'attr': 'name', 'val': 'bt:pubDate'},
@@ -67,7 +71,8 @@ class TidyRefsBot(ExistingPageBot):
             {'attr': 'pubdate', 'val': 'pubdate'},
             {'attr': 'name', 'val': 'sailthru.date'},
             {'attr': 'name', 'val': 'pagerender'},
-            {'attr': 'name', 'val': 'lastmod'},
+            {'attr': 'name', 'val': 'dc.date'},
+            {'attr': 'name', 'val': 'date'},
         ]
 
         for pattern in meta_patterns:
@@ -175,9 +180,11 @@ class TidyRefsBot(ExistingPageBot):
     def process_url(self, url: str) -> mw.wikicode.Wikicode:
         print(flush=True, end=f'GET {url} ')
         try:
-            req = requests.get(url, allow_redirects=True)
+            req = requests.get(url, allow_redirects=True, headers=REQ_HEADERS)
             soup = BeautifulSoup(req.text, 'html.parser')
-            title = soup.title.string
+            title = ''
+            if soup.title:
+                title = soup.title.string
             print(f'-> {title}')
         except Exception as e:
             print(f'FAIL: {e}')
@@ -190,14 +197,21 @@ class TidyRefsBot(ExistingPageBot):
         if not all(ch not in title for ch in '[]{}<>'):
             title = f'<nowiki>{html.escape(title)}</nowiki>'
         title = prompt(' ■ Title  : ', default=title).strip()
-        today = datetime.today().strftime('%Y-%m-%d')
+        if match := RE_WEBARCHIVE.match(url):
+            today = f'{match.group(1)}-{match.group(2)}-{match.group(3)}'
+        else:
+            today = datetime.today().strftime('%Y-%m-%d')
         today = prompt(' ■ Access : ', default=today).strip()
-        author = RE_DOMAIN.search(url).group(1)
-        author = prompt(' ■ Author : ', default=author).strip()
+        # author = RE_DOMAIN.search(url).group(1)
+        if author := prompt(' ■ Author : ').strip():
+            author = ', ' + author
         create_date = prompt(' ■ Create : ', default=self.get_publish_date(req, soup))
-        date_part = f', {self.format_date(create_date)}'
+        if create_date := self.format_date(create_date):
+            date_part = f', {create_date}'
+        else:
+            date_part = ''
 
-        return mw.parse(f'[{url} {title}], {author}{date_part} (Accessed: {today})')
+        return mw.parse(f'[{url} {title}]{author}{date_part} (Accessed: {today})')
 
 
 def main(*args: str) -> None:
