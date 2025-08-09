@@ -41,10 +41,10 @@ class TidyUpHeadingsBot(ExistingPageBot):
         if heading_title:
             self.put_current(
                 str(wikicode),
-                summary=f"/* {heading_title.strip()} */ {self.opt.summary}",
+                summary=f"/* {heading_title.strip()} */ 🍣 {self.opt.summary}",
             )
         else:
-            self.put_current(str(wikicode), summary=f"Tidy up heading levels")
+            self.put_current(str(wikicode), summary=f"🍣 Tidy up heading levels")
 
 
 def main(*args: str) -> None:

@@ -211,3 +211,6 @@ ignore = ["D105", "D211", "D213", "D214", "D401", "D404", "D406", "D407", "D412"
 
 [tool.ruff.lint.flake8-quotes]
 inline-quotes = "single"
+
+[tool.ruff.format]
+quote-style = "single"
