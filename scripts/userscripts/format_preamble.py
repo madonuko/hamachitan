@@ -31,19 +31,23 @@ class FormatPreambleBot(ExistingPageBot):
             i += 1
             if isinstance(node, mw.nodes.Text):
                 if node.value.isspace():
+                    if text != '' and not text.endswith('\n'):
+                        text += '\n'
                     continue
+                if node.value[0].isspace() and text != '' and not text.endswith('\n'):
+                    text += '\n'
                 while node.value[0].isspace():
                     node.value = node.value[1:]
                 text += node.value
                 break
             if isinstance(node, mw.nodes.Template):
-                if '\n' in str(node) and not text.endswith('\n'):
+                if '\n' in str(node) and not text.endswith('\n') and text != '':
                     text += '\n' + str(node) + '\n'
                 elif '\n' in str(node):
                     text += str(node) + '\n'
                 elif len(str(node)) >= 80 and len(node.params) >= 2:
                     # try to make it multiline
-                    if not text.endswith('\n'):
+                    if not text.endswith('\n') and text != '':
                         text += '\n'
                     text += '{{' + str(node.name).strip()
                     for param in node.params:
@@ -58,21 +62,25 @@ class FormatPreambleBot(ExistingPageBot):
                 continue
             if isinstance(node, mw.nodes.Heading):
                 while (
-                    x := input('Remove heading `{node.title.strip()}`? ').lower()
+                    x := input(f'Remove heading `{node.title.strip()}`? ').lower()
                 ) not in 'yn':
                     pass
                 if x == 'y':
                     continue
-                if not len(text):
+                if not text.endswith('\n'):
                     text = '\n'
                 text += str(node)
-                break
+                continue
             if isinstance(node, mw.nodes.Wikilink):
                 if first_wikilink_index == -1 or node.title.lower().startswith(
                     'category:'
                 ):
                     first_wikilink_index = len(text)
-                text += str(node) + '\n'
+                if ':' not in str(node) or str(node).lower().startswith('guides'):
+                    text += str(node)
+                    break
+                else:
+                    text += str(node) + '\n'
                 continue
             text += str(node)
             break
