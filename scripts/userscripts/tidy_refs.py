@@ -197,6 +197,9 @@ class TidyRefsBot(ExistingPageBot):
         if not all(ch not in title for ch in '[]{}<>'):
             title = f'<nowiki>{html.escape(title)}</nowiki>'
         title = prompt(' ■ Title  : ', default=title).strip()
+        if title.startswith('err '):
+            title = title.removeprefix('err ')
+            return mw.parse(f'[{url} <span style="color:#fc493b">{url} <sup>🍣{title}]')
         if match := RE_WEBARCHIVE.match(url):
             today = f'{match.group(1)}-{match.group(2)}-{match.group(3)}'
         else:
