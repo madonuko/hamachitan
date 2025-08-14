@@ -18,12 +18,13 @@ from pywikibot.bot import ExistingPageBot
 RE_WEBARCHIVE = re.compile(r'^https://web\.archive\.org/web/(\d{4})(\d{2})(\d{2})')
 
 REQ_HEADERS = {'User-Agent': 'atl.wiki/User:Hamachitan', 'From': 'mado@fyralabs.com'}
+DEAD_LINK_TEMPLATE = 'Dead Link'
 
 
 class TidyRefsBot(ExistingPageBot):
     update_options = {
         # 'text': 'text to update',
-        'summary': '/* References */ 🍣 Tidy up format, see [[ATL:Guidelines#Citations]]'
+        'summary': '/* References */ 🍣 Fix [[ATL:Guidelines#Citations|citations]]'
     }
 
     def treat_page(self):
@@ -44,7 +45,7 @@ class TidyRefsBot(ExistingPageBot):
             if len(tag.contents.nodes) == 1 and isinstance(
                 tag.contents.nodes[0], mw.nodes.ExternalLink
             ):
-                tag.contents = self.process_url(str(tag.contents.nodes[0].url))
+                tag.contents = self.process_url(tag.contents.nodes[0])
         return wikicode
 
     @staticmethod
@@ -177,8 +178,11 @@ class TidyRefsBot(ExistingPageBot):
 
         return ''
 
-    def process_url(self, url: str) -> mw.wikicode.Wikicode:
+    def process_url(self, node: mw.nodes.ExternalLink) -> mw.wikicode.Wikicode:
+        if (url := str(node.url)).endswith('}}'):
+            return node
         print(flush=True, end=f'GET {url} ')
+        today = datetime.today().strftime('%Y-%m-%d')
         try:
             req = requests.get(url, allow_redirects=True, headers=REQ_HEADERS)
             soup = BeautifulSoup(req.text, 'html.parser')
@@ -188,22 +192,20 @@ class TidyRefsBot(ExistingPageBot):
             print(f'-> {title}')
         except Exception as e:
             print(f'FAIL: {e}')
-            return mw.parse(f'[{url} <span style="color:#fc493b">{url} <sup>🍣DEAD?]')
+            return mw.parse(f'{node}{{{{{DEAD_LINK_TEMPLATE}|{today}|{e}}}}}')
         if not req.ok:
             print(f'-> {req.status_code}')
             return mw.parse(
-                f'[{url} <span style="color:#fc493b">{url} <sup>🍣{req.status_code}]'
+                f'{node}{{{{{DEAD_LINK_TEMPLATE}|{today}|{req.status_code}}}}}'
             )
         if not all(ch not in title for ch in '[]{}<>'):
             title = f'<nowiki>{html.escape(title)}</nowiki>'
         title = prompt(' ■ Title  : ', default=title).strip()
         if title.startswith('err '):
             title = title.removeprefix('err ')
-            return mw.parse(f'[{url} <span style="color:#fc493b">{url} <sup>🍣{title}]')
+            return mw.parse(f'{node}{{{{{DEAD_LINK_TEMPLATE}|{today}|{title}}}}}')
         if match := RE_WEBARCHIVE.match(url):
             today = f'{match.group(1)}-{match.group(2)}-{match.group(3)}'
-        else:
-            today = datetime.today().strftime('%Y-%m-%d')
         today = prompt(' ■ Access : ', default=today).strip()
         # author = RE_DOMAIN.search(url).group(1)
         if author := prompt(' ■ Author : ').strip():
