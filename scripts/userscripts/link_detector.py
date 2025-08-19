@@ -9,6 +9,7 @@ import mwparserfromhell as mw
 import pywikibot
 from pywikibot import pagegenerators
 from pywikibot.bot import ExistingPageBot
+import typing
 
 REQ_HEADERS = {'User-Agent': 'atl.wiki/User:Hamachitan', 'From': 'mado@fyralabs.com'}
 DEAD_LINK_TEMPLATE = 'Dead Link'
@@ -141,10 +142,11 @@ class LinkDetectorBot(ExistingPageBot):
         parent = wikicode.get_parent(node)
         if parent:
             is_next = False
-            for child in parent.__children__():
-                if is_next:
-                    break
-                is_next = child == node
+            for child in node.__children__():
+                for cur_node in child.nodes:
+                    if is_next:
+                        break
+                    is_next = cur_node == node
             else:
                 return None
             if (
