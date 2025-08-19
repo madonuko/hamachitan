@@ -111,6 +111,13 @@ class FormatPreambleBot(ExistingPageBot):
 
         text = self.strip_dup_lines(text)
 
+        wikicode = mw.parse(text)
+        headings = wikicode.filter_headings()
+        while len(headings) and all(h.level > 2 for h in headings):
+            for h in headings:
+                h.level -= 1
+        text = str(wikicode)
+
         self.put_current(text, summary=f'🍣 {self.opt.summary}')
 
     def strip_dup_lines(self, text: str) -> str:
