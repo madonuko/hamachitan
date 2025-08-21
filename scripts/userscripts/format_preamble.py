@@ -63,11 +63,11 @@ class FormatPreambleBot(ExistingPageBot):
             if isinstance(node, mw.nodes.Heading):
                 while (
                     x := input(f'Remove heading `{node.title.strip()}`? ').lower()
-                ) not in 'yn':
+                ) not in 'yn' or x == '':
                     pass
                 if x == 'y':
                     continue
-                if not text.endswith('\n'):
+                if not text.endswith('\n') and text != '':
                     text = '\n'
                 text += str(node)
                 continue
