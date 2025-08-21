@@ -117,8 +117,10 @@ class LinkDetectorBot(ExistingPageBot):
             if template := templates[i] or self.find_template(wikicode, nodes[i]):
                 if (reason := template.params[1]) == str(status_codes[i]):
                     continue
-                if reason.startswith('timeout') and status_codes[i].startswith(
-                    'timeout'
+                if (
+                    isinstance(reason, str)
+                    and reason.startswith('timeout')
+                    and status_codes[i].startswith('timeout')
                 ):
                     continue
                 wikicode.remove(str(template))
@@ -142,18 +144,20 @@ class LinkDetectorBot(ExistingPageBot):
         parent = wikicode.get_parent(node)
         if parent:
             is_next = False
-            for child in node.__children__():
+            for child in parent.__children__():
                 for cur_node in child.nodes:
                     if is_next:
                         break
                     is_next = cur_node == node
+                if is_next:
+                    break
             else:
                 return None
             if (
-                isinstance(child, mw.nodes.Template)
-                and child.name == DEAD_LINK_TEMPLATE
+                isinstance(cur_node, mw.nodes.Template)
+                and cur_node.name == DEAD_LINK_TEMPLATE
             ):
-                return child
+                return cur_node
             return None
 
         idx = wikicode.index(node)
