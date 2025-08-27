@@ -13,7 +13,7 @@ import mwparserfromhell as mw
 import pywikibot
 from pywikibot import pagegenerators
 from pywikibot.bot import ExistingPageBot
-from .link_detector import LinkDetectorBot
+from link_detector import LinkDetectorBot
 
 RE_WEBARCHIVE = re.compile(r'^https://web\.archive\.org/web/(\d{4})(\d{2})(\d{2})')
 
@@ -175,6 +175,7 @@ class TidyRefsBot(ExistingPageBot):
         return ''
 
     async def process_url(self, node: mw.nodes.ExternalLink) -> mw.wikicode.Wikicode:
+        url = node.url
         print(flush=True, end=f'GET {url} ')
         today = datetime.today().strftime('%Y-%m-%d')
         try:
