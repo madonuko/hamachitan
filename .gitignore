@@ -1,6 +1,6 @@
 throttle.ctrl
-user-*.py
-user-*.cfg
+#user-*.py
+#user-*.cfg
 *.bak
 *.lwp
 *.pyc
@@ -11,7 +11,7 @@ user-*.cfg
 /*.egg
 /data*
 /category*
-families/
+#families/
 logs*
 *apicache*
 *pycache*
@@ -23,7 +23,7 @@ pywikibot.egg-info/
 build
 dist
 docs/_build/
-/scripts/userscripts/*
+#/scripts/userscripts/*
 !/scripts/userscripts/__init__.py
 .vscode/
 **/.DS_Store
