@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
-"""Tests for the site module."""
 #
-# (C) Pywikibot team, 2008-2025
+# (C) Pywikibot team, 2008-2026
 #
 # Distributed under the terms of the MIT license.
 #
+"""Tests for the site module."""
 from __future__ import annotations
 
+import unittest
 from contextlib import suppress
 
 import pywikibot
 from pywikibot.backports import NoneType
 from pywikibot.exceptions import Error
-from tests.aspects import DefaultSiteTestCase, TestCase, unittest
+from tests.aspects import DefaultSiteTestCase, TestCase
 
 
 WARN_SELF_CALL = (r'Referencing this attribute like a function '
@@ -24,11 +25,6 @@ class TestBaseSiteProperties(TestCase):
     """Test properties for BaseSite."""
 
     sites = {
-        'enwikinews': {
-            'family': 'wikinews',
-            'code': 'en',
-            'result': ('/doc',),
-        },
         'enwikibooks': {
             'family': 'wikibooks',
             'code': 'en',

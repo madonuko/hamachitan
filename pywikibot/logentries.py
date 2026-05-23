@@ -1,9 +1,9 @@
-"""Objects representing MediaWiki log entries."""
 #
-# (C) Pywikibot team, 2007-2024
+# (C) Pywikibot team, 2007-2026
 #
 # Distributed under the terms of the MIT license.
 #
+"""Objects representing MediaWiki log entries."""
 from __future__ import annotations
 
 import datetime
@@ -97,7 +97,7 @@ class LogEntry(UserDict):
     def params(self) -> dict[str, Any]:
         """Additional data for some log entry types.
 
-        .. versionadded:: 9.4
+        .. version-added:: 9.4
            private *_param* attribute became a public property
         """
         return self.get('params', {})
@@ -106,7 +106,7 @@ class LogEntry(UserDict):
     def page(self) -> int | pywikibot.page.Page:
         """Page on which action was performed.
 
-        :return: page on action was performed
+        :return: Page on action was performed
         """
         return pywikibot.Page(self.site, self['title'])
 
@@ -132,7 +132,7 @@ class UserTargetLogEntry(LogEntry):
         This returns a User object instead of the Page object returned
         by the superclass method.
 
-        :return: target user
+        :return: Target user
         """
         return pywikibot.User(self.site, self['title'])
 
@@ -161,7 +161,7 @@ class BlockEntry(LogEntry):
     def page(self) -> int | pywikibot.page.Page:
         """Return the blocked account or IP.
 
-        :return: the Page object of username or IP if this block action
+        :return: The Page object of username or IP if this block action
             targets a username or IP, or the blockid if this log
             reflects the removal of an autoblock
         """
@@ -177,7 +177,7 @@ class BlockEntry(LogEntry):
 
         It raises an Error if the entry is an unblocking log entry.
 
-        :return: list of flags strings
+        :return: List of flags strings
         """
         if self.action() == 'unblock':
             return []
@@ -211,7 +211,7 @@ class RightsEntry(LogEntry):
     def oldgroups(self) -> list[str]:
         """Return old rights groups.
 
-        .. versionchanged:: 7.5
+        .. version-changed:: 7.5
            No longer raise KeyError if `oldgroups` does not exists or
            LogEntry has no additional data e.g. due to hidden data and
            insufficient rights.
@@ -222,7 +222,7 @@ class RightsEntry(LogEntry):
     def newgroups(self) -> list[str]:
         """Return new rights groups.
 
-        .. versionchanged:: 7.5
+        .. version-changed:: 7.5
            No longer raise KeyError if `oldgroups` does not exists or
            LogEntry has no additional data e.g. due to hidden data and
            insufficient rights.
@@ -328,7 +328,7 @@ class LogEntryFactory:
     def create(self, logdata: dict[str, Any]) -> LogEntry:
         """Instantiate the LogEntry object representing logdata.
 
-        :param logdata: <item> returned by the api
+        :param logdata: Item returned by the API
         :return: LogEntry object representing logdata
         """
         return self._creator(logdata)
@@ -336,7 +336,7 @@ class LogEntryFactory:
     def get_valid_entry_class(self, logtype: str) -> LogEntry:
         """Return the class corresponding to the @logtype string parameter.
 
-        :return: specified subclass of LogEntry
+        :return: Specified subclass of LogEntry
         :raise KeyError: logtype is not valid
         """
         if logtype not in self._site.logtypes:
@@ -348,7 +348,7 @@ class LogEntryFactory:
     def get_entry_class(cls, logtype: str) -> LogEntry:
         """Return the class corresponding to the @logtype string parameter.
 
-        :return: specified subclass of LogEntry
+        :return: Specified subclass of LogEntry
 
         .. note:: this class method cannot verify whether the given logtype
            already exits for a given site; to verify use Site.logtypes
@@ -375,7 +375,7 @@ class LogEntryFactory:
     def _create_from_data(self, logdata: dict[str, Any]) -> LogEntry:
         """Check for logtype from data, and creates the correct LogEntry.
 
-        :param logdata: log entry data
+        :param logdata: Log entry data
         """
         try:
             logtype = logdata['type']

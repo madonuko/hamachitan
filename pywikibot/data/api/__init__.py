@@ -1,9 +1,9 @@
-"""Interface to MediaWiki's api.php."""
 #
-# (C) Pywikibot team, 2014-2025
+# (C) Pywikibot team, 2014-2026
 #
 # Distributed under the terms of the MIT license.
 #
+"""Interface to MediaWiki's api.php."""
 from __future__ import annotations
 
 from email.generator import BytesGenerator
@@ -25,7 +25,6 @@ from pywikibot.data.api._optionset import OptionSet
 from pywikibot.data.api._paraminfo import ParamInfo
 from pywikibot.data.api._requests import CachedRequest, Request, encode_url
 from pywikibot.family import SubdomainFamily
-from pywikibot.tools import ModuleDeprecationWrapper
 
 
 __all__ = (
@@ -93,9 +92,3 @@ class CTEBinaryMIMEMultipart(MIMEMultipartOrig):
 
 
 MIMEMultipart = CTEBinaryMIMEMultipart
-
-wrapper = ModuleDeprecationWrapper(__name__)
-wrapper.add_deprecated_attr(
-    'LoginManager',
-    replacement_name='pywikibot.login.ClientLoginManager',
-    since='8.0.0')

@@ -1,3 +1,8 @@
+#
+# (C) Pywikibot team, 2008-2026
+#
+# Distributed under the terms of the MIT license.
+#
 """Objects representing MediaWiki File pages.
 
 This module includes objects:
@@ -5,20 +10,15 @@ This module includes objects:
 * FilePage: A subclass of Page representing a file description page
 * FileInfo: a structure holding imageinfo of latest revision of FilePage
 """
-#
-# (C) Pywikibot team, 2008-2024
-#
-# Distributed under the terms of the MIT license.
-#
 from __future__ import annotations
 
+from collections.abc import Iterable
 from http import HTTPStatus
 from os import PathLike
 from pathlib import Path
 from urllib.parse import urlparse
 
 import pywikibot
-from pywikibot.backports import Iterable
 from pywikibot.comms import http
 from pywikibot.exceptions import NoPageError
 from pywikibot.page._page import Page
@@ -42,23 +42,23 @@ class FilePage(Page):
                  ignore_extension: bool = False) -> None:
         """Initializer.
 
-        .. versionchanged:: 8.4
+        .. version-changed:: 8.4
            Check for valid extensions.
-        .. versionchanged:: 9.3
+        .. version-changed:: 9.3
            Added the optional *ignore_extension* parameter.
-        .. versionchanged:: 9.6
+        .. version-changed:: 9.6
            Show a warning if *ignore_extension* was set and the
            extension is invalid.
         .. seealso::
            :meth:`Site.file_extensions
            <pywikibot.site._apisite.APISite.file_extensions>`
 
-        :param source: the source of the page
+        :param source: The source of the page
         :type source: pywikibot.page.BaseLink (or subclass),
             pywikibot.page.Page (or subclass), or pywikibot.page.Site
-        :param title: normalized title of the page; required if source is a
+        :param title: Normalized title of the page; required if source is a
             Site, ignored otherwise
-        :param ignore_extension: prevent extension check
+        :param ignore_extension: Prevent extension check
         :raises ValueError: Either the title is not in the file
             namespace or does not have a valid extension and
             *ignore_extension* was not set.
@@ -106,7 +106,7 @@ class FilePage(Page):
         At the same time, the whole history of Image is fetched and
         cached in self._file_revisions
 
-        :return: instance of FileInfo()
+        :return: Instance of FileInfo()
         """
         if not self._file_revisions:
             self.site.loadimageinfo(self, history=True)
@@ -120,7 +120,7 @@ class FilePage(Page):
         At the same time, the whole history of Image is fetched and
         cached in self._file_revisions
 
-        :return: instance of FileInfo()
+        :return: Instance of FileInfo()
         """
         if not self._file_revisions:
             self.site.loadimageinfo(self, history=True)
@@ -128,16 +128,15 @@ class FilePage(Page):
         return self._file_revisions[oldest_ts]
 
     def get_file_info(self, ts) -> dict:
-        """Retrieve and store information of a specific Image rev. of FilePage.
+        """Retrieve and store information of a specific Image rev of FilePage.
 
-        This function will load also metadata.
-        It is also used as a helper in FileInfo to load metadata lazily.
+        This function will load also metadata. It is also used as a
+        helper in FileInfo to load metadata lazily.
 
-        .. versionadded:: 8.6
+        .. version-added:: 8.6
 
-        :param ts: timestamp of the Image rev. to retrieve
-
-        :return: instance of FileInfo()
+        :param ts: Timestamp of the Image revision to retrieve
+        :return: Instance of FileInfo()
         """
         self.site.loadimageinfo(self, history=False, timestamp=ts)
         return self._file_revisions[ts]
@@ -145,7 +144,7 @@ class FilePage(Page):
     def get_file_history(self) -> dict:
         """Return the file's version history.
 
-        :return: dictionary with:
+        :return: Dictionary with:
             key: timestamp of the entry
             value: instance of FileInfo()
         """
@@ -181,31 +180,42 @@ class FilePage(Page):
 
         .. note:: Parameters validation and error handling left to the
            API call.
+
+        .. important::
+           Starting with MediaWiki 1.45, the file width returned may be
+           greater than or equal to the requested *url_width* due to
+           :phab:`T360589`. If you need the exact width, you must access
+           the corresponding thumbnail URL directly. See the additional
+           notes at :api:`Imageinfo`.
+
+        .. version-changed:: 11.2
+           Remove UTM tracking parameter.
+
         .. seealso::
 
            * :meth:`APISite.loadimageinfo()
              <pywikibot.site._apisite.APISite.loadimageinfo>`
            * :api:`Imageinfo`
 
-        :param url_width: get info for a thumbnail with given width
-        :param url_height: get info for a thumbnail with given height
-        :param url_param:  get info for a thumbnail with given param
-        :return: latest file url or thumburl
+        :param url_width: Get info for a thumbnail with given width
+        :param url_height: Get info for a thumbnail with given height
+        :param url_param: Get info for a thumbnail with given param
+        :return: Latest file url or thumburl
         """
         # Plain url is requested.
         if url_width is None and url_height is None and url_param is None:
-            return self.latest_file_info.url
+            return self.latest_file_info.url.split('?', 1)[0]
 
         # Thumburl is requested.
         self.site.loadimageinfo(self, history=not self._file_revisions,
                                 url_width=url_width, url_height=url_height,
                                 url_param=url_param)
-        return self.latest_file_info.thumburl
+        return self.latest_file_info.thumburl.split('?', 1)[0]
 
     def file_is_shared(self) -> bool:
         """Check if the file is stored on any known shared repository.
 
-        .. versionchanged:: 7.0
+        .. version-changed:: 7.0
            return False if file does not exist on shared image repository
            instead raising NoPageError.
         """
@@ -258,11 +268,11 @@ class FilePage(Page):
         'Pywikibot'
 
         .. seealso:: :meth:`globalusage`
-        .. versionchanged:: 7.2
+        .. version-changed:: 7.2
            all parameters from :meth:`APISite.imageusage()
            <pywikibot.site._generators.GeneratorsMixin.imageusage>`
            are available.
-        .. versionchanged:: 7.4
+        .. version-changed:: 7.4
            renamed from :meth:`usingPages`.
         """
         return self.site.imageusage(self, **kwargs)
@@ -271,7 +281,7 @@ class FilePage(Page):
     def file_is_used(self) -> bool:
         """Check whether the file is used at this site.
 
-        .. versionadded:: 7.1
+        .. version-added:: 7.1
         """
         return bool(list(self.using_pages(total=1)))
 
@@ -303,7 +313,7 @@ class FilePage(Page):
                raise an UploadError exception if the static boolean is
                False.
         :type ignore_warnings: bool or callable or iterable of str
-        :keyword chunk_size: The chunk size in bytesfor chunked
+        :keyword chunk_size: The chunk size in bytes for chunked
             uploading (see :api:`Upload#Chunked_uploading`). It will
             only upload in chunks, if the chunk size is positive but
             lower than the file size.
@@ -353,18 +363,21 @@ class FilePage(Page):
         The suffix has changed and Pywikibot_MW_gear_icon.png was
         downloaded.
 
-        .. versionadded:: 8.2
+        .. version-added:: 8.2
            *url_width*, *url_height* and *url_param* parameters.
-        .. versionchanged:: 8.2
+        .. version-changed:: 8.2
            *filename* argument may be also a path-like object or an
            iterable of path segments.
+        .. version-changed:: 11.1
+           Use a read throttle for download per Wikitech robot policy.
+           Set it to 25 times of :attr:`throttle.Throttle.delay`.
         .. note:: filename suffix is adjusted if target url's suffix is
            different which may be the case if a thumbnail is loaded.
         .. warning:: If a file already exists, it will be overridden
            without further notes.
         .. seealso:: :api:`Imageinfo` for new parameters
 
-        :param filename: filename where to save file. If ``None``,
+        :param filename: Filename where to save file. If ``None``,
             ``self.title(as_filename=True, with_ns=False)`` will be used.
             If an Iterable is specified the items will be used as path
             segments. To specify the user directory path you have to use
@@ -374,16 +387,16 @@ class FilePage(Page):
             None. If the suffix is missing or different from url (which
             can happen if a *url_width*, *url_height* or *url_param*
             argument is given), the file suffix is adjusted.
-        :param chunk_size: the size of each chunk to be received and
+        :param chunk_size: The size of each chunk to be received and
             written to file.
-        :param revision: file revision to download. If None
+        :param revision: File revision to download. If None
             :attr:`latest_file_info` will be used; otherwise provided
             revision will be used.
-        :param url_width: download thumbnail with given width
-        :param url_height: download thumbnail with given height
-        :param url_param:  download thumbnail with given param
+        :param url_width: Download thumbnail with given width
+        :param url_height: Download thumbnail with given height
+        :param url_param: Download thumbnail with given param
         :return: True if download is successful, False otherwise.
-        :raise IOError: if filename cannot be written for any reason.
+        :raises IOError: If filename cannot be written for any reason.
         """
         if not filename:
             path = Path()
@@ -406,6 +419,12 @@ class FilePage(Page):
         path = path.with_suffix(Path(urlparse(url).path).suffix)
         # adjust user path
         path = path.expanduser()
+        # use read throttle per Wikitech robot policy for download (T418672)
+        # multiply minthrottle by 25 to get an functional delay
+        self.site.throttle.set_delays(delay=25 * self.site.throttle.delay)
+        self.site.throttle()
+        self.site.throttle.set_delays()
+
         req = http.fetch(url, stream=True)
         if req.status_code == HTTPStatus.OK:
             with open(path, 'wb') as f:
@@ -423,8 +442,8 @@ class FilePage(Page):
 
         .. seealso:: :meth:`using_pages`
 
-        :param total: iterate no more than this number of pages in total
-        :return: a generator that yields Pages also on sites different from
+        :param total: Iterate no more than this number of pages in total
+        :return: A generator that yields Pages also on sites different from
             self.site.
         :rtype: generator
         """
@@ -437,7 +456,7 @@ class FilePage(Page):
         the method returns the associated mediainfo entity. Otherwise,
         it falls back to the behavior of :meth:`BasePage.data_item`.
 
-        .. versionadded:: 6.5
+        .. version-added:: 6.5
 
         :rtype: pywikibot.page.WikibaseEntity
         """
@@ -466,10 +485,10 @@ class FileInfo:
 
     .. note:: timestamp will be casted to :func:`pywikibot.Timestamp`.
 
-    .. versionchanged:: 7.7
+    .. version-changed:: 7.7
        raises KeyError instead of AttributeError if FileInfo is used as
        Mapping.
-    .. versionchanged:: 8.6
+    .. version-changed:: 8.6
        Metadata are loaded lazily.
        Added *filepage* parameter.
     """
@@ -483,11 +502,16 @@ class FileInfo:
     def update(self, file_revision) -> None:
         """Update FileInfo with new values.
 
-        .. versionadded:: 8.6
+        .. version-added:: 8.6
+        .. version-changed:: 11.3
+           Tracking utm_* parameters are stripped from the url attribute.
         """
         for k, v in file_revision.items():
             if k == 'timestamp':
                 v = pywikibot.Timestamp.fromISOformat(v)
+            elif k == 'url':
+                # remove tracking parameters
+                v = v.split('?', 1)[0]
             setattr(self, k, v)
 
     def __getitem__(self, key):
@@ -510,7 +534,7 @@ class FileInfo:
     def metadata(self):
         """Return metadata.
 
-        .. versionadded:: 8.6
+        .. version-added:: 8.6
         """
         if self._metadata is None:
             self.filepage.get_file_info(self.timestamp)
@@ -520,6 +544,6 @@ class FileInfo:
     def metadata(self, value) -> None:
         """Set metadata.
 
-        .. versionadded:: 8.6
+        .. version-added:: 8.6
         """
         self._metadata = value

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Tests for titletranslate module."""
 #
-# (C) Pywikibot team, 2022-2025
+# (C) Pywikibot team, 2022-2026
 #
 # Distributed under the terms of the MIT license.
 #
+"""Tests for titletranslate module."""
 from __future__ import annotations
 
 import unittest
@@ -36,7 +36,7 @@ class TestTitleTranslate(TestCase):
         """Test translate method."""
         site = self.get_site(key)
         result = translate(page=self.get_mainpage(site), auto=False,
-                           hints=['5:', 'nl,en,zh'], site=site)
+                           hints=['5:', 'nl,en,th'], site=site)
         self.assertLength(result, 6)
         result = translate(page=self.get_mainpage(site))
         self.assertIsEmpty(result)

@@ -13,7 +13,7 @@ The project started in 2003 and is currently on core version |version|.
 It features full API usage and is up-to-date with new MediaWiki features and
 a Pythonic package layout. But it also works with older installations of
 MediaWiki 1.31 or higher. For older MediaWiki versions you have to use older
-Pywikibot releases; refer :manpage:`Compatibility`.
+Pywikibot releases; refer :ref:`Version compatibility`.
 
 Pywikibot supports Microsoft Windows, macOS and Linux when used with a
 compatible version of Python. It should also work on any other operating
@@ -21,8 +21,8 @@ system that has a compatible version of Python installed. To check
 whether you have Python installed and to find its version, just type
 ``python`` at the CMD or shell prompt.
 
-Python 3.8 or higher is currently required to run the bot but Python 3.9 or
-higher is recommended. Python 3.8 support will be dropped with Pywikibot 11 soon.
+Python 3.9 or higher is currently required to run the bot but Python 3.10 or
+higher is strictly recommended.
 
 Pywikibot and this documentation are licensed under the
 :ref:`MIT license`;
@@ -56,7 +56,7 @@ Contents
    global_options
    faq
    getting_help
-
+   SECURITY
 
 .. toctree::
    :maxdepth: 1
@@ -76,6 +76,7 @@ Contents
    scripts_ref/index
    utilities/install
    tests_ref/index
+   codeofconduct
 
 .. toctree::
    :maxdepth: 1

@@ -1,15 +1,13 @@
-"""Objects representing api tokens."""
 #
-# (C) Pywikibot team, 2008-2025
+# (C) Pywikibot team, 2008-2026
 #
 # Distributed under the terms of the MIT license.
 #
+"""Objects representing api tokens."""
 from __future__ import annotations
 
 from collections.abc import Container
-from typing import TYPE_CHECKING, Any
-
-from pywikibot.tools import deprecated, issue_deprecation_warning
+from typing import TYPE_CHECKING
 
 
 if TYPE_CHECKING:
@@ -34,7 +32,11 @@ class TokenWallet(Container):
         self._last_token_key: str | None = None
 
     def __getitem__(self, key: str) -> str:
-        """Get token value for the given key."""
+        """Get token value for the given key.
+
+        .. version-changed:: 11.0
+           Support of legacy API tokens was dropped.
+        """
         if self.site.user() is None and key != 'login':
             self.site.login()
 
@@ -44,15 +46,6 @@ class TokenWallet(Container):
 
         if not self._tokens:
             self._tokens = self.site.get_tokens([])
-
-        # Redirect old tokens which were used by outdated MediaWiki versions
-        # but show a FutureWarning for this usage:
-        # https://www.mediawiki.org/wiki/MediaWiki_1.37/Deprecation_of_legacy_API_token_parameters
-        if key in {'edit', 'delete', 'protect', 'move', 'block', 'unblock',
-                   'email', 'import', 'options'}:
-            issue_deprecation_warning(
-                f'Token {key!r}', "'csrf'", since='8.0.0')
-            key = 'csrf'
 
         try:
             token = self._tokens[key]
@@ -84,7 +77,7 @@ class TokenWallet(Container):
         >>> repr(site.tokens)
         "TokenWallet(pywikibot.Site('wikipedia:test'))"
 
-        .. versionchanged:: 8.0
+        .. version-changed:: 8.0
            Provide a string which looks like a valid Python expression.
         """
         user = f', user={self._currentuser!r}' if self._currentuser else ''
@@ -94,7 +87,7 @@ class TokenWallet(Container):
     def clear(self) -> None:
         """Clear the self._tokens cache. Tokens are reloaded when needed.
 
-        .. versionadded:: 8.0
+        .. version-added:: 8.0
         """
         self._tokens.clear()
 
@@ -118,7 +111,7 @@ class TokenWallet(Container):
 
            r._params['token'] = r.site.tokens.update_tokens(r._params['token'])
 
-        .. versionadded:: 8.0
+        .. version-added:: 8.0
 
         :param tokens: A list of token types that need to be updated.
         :return: A list of updated tokens corresponding to the given
@@ -140,15 +133,3 @@ class TokenWallet(Container):
 
         self.clear()  # clear the cache
         return [self[token_type] for token_type in types]
-
-    @deprecated('clear()', since='8.0.0')
-    def load_tokens(self, *args: Any, **kwargs: Any) -> None:
-        """Clear cache to lazy load tokens when needed.
-
-        .. deprecated:: 8.0
-           Use :meth:`clear` instead.
-        .. versionchanged:: 8.0
-           Clear the cache instead of loading tokens. All parameters are
-           ignored.
-        """
-        self.clear()

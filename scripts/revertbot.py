@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+#
+# (C) Pywikibot team, 2008-2026
+#
+# Distributed under the terms of the MIT license.
+#
 r"""This script can be used for reverting certain edits.
 
 The following command line parameters are supported:
@@ -35,18 +40,13 @@ and override its `callback` method. Here is a sample:
                 return bool(pattern.search(text))
             return False
 """
-#
-# (C) Pywikibot team, 2008-2025
-#
-# Distributed under the terms of the MIT license.
-#
 from __future__ import annotations
 
+from collections.abc import Container
 from textwrap import fill
 
 import pywikibot
 from pywikibot import i18n
-from pywikibot.backports import Container
 from pywikibot.bot import OptionHandler
 from pywikibot.date import format_date, formatYear
 from pywikibot.exceptions import APIError, Error
@@ -101,7 +101,7 @@ class BaseRevertBot(OptionHandler):
     def local_timestamp(self, ts) -> str:
         """Convert Timestamp to a localized timestamp string.
 
-        .. versionadded:: 7.0
+        .. version-added:: 7.0
         """
         year = formatYear(self.site.lang, ts.year)
         date = format_date(ts.month, ts.day, self.site)

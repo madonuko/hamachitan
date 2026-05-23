@@ -1,3 +1,8 @@
+#
+# (C) Pywikibot team, 2013-2026
+#
+# Distributed under the terms of the MIT license.
+#
 """Objects representing various types of Wikibase pages and structures.
 
 This module also includes objects:
@@ -7,11 +12,6 @@ This module also includes objects:
 * Property: a type of semantic data.
 * WikibaseEntity: base interface for Wikibase entities.
 """
-#
-# (C) Pywikibot team, 2013-2025
-#
-# Distributed under the terms of the MIT license.
-#
 from __future__ import annotations
 
 import json as jsonlib
@@ -19,7 +19,7 @@ import re
 from collections import OrderedDict, defaultdict
 from contextlib import suppress
 from itertools import chain
-from typing import TYPE_CHECKING, Any, NoReturn
+from typing import TYPE_CHECKING, Any, Literal, NoReturn
 
 import pywikibot
 from pywikibot.exceptions import (
@@ -88,13 +88,9 @@ class WikibaseEntity:
         (e.g., 'labels', 'claims') to appropriate collection classes
         (e.g., :class:`LanguageDict<pywikibot.page._collections.LanguageDict>`,
         :class:`ClaimCollection<pywikibot.page._collections.ClaimCollection>`)
-
-    :cvar entity_type: entity type identifier
-    :type entity_type: str
-
-    :cvar title_pattern: regular expression which matches all possible
+    :cvar str entity_type: entity type identifier
+    :cvar str title_pattern: regular expression which matches all possible
         entity ids for this entity type
-    :type title_pattern: str
     """
 
     DATA_ATTRIBUTES: dict[str, Any] = {}
@@ -104,8 +100,7 @@ class WikibaseEntity:
 
         :param repo: Entity repository.
         :type repo: DataSite
-        :param id_: Entity identifier.
-        :type id_: str or None, -1 and None mean non-existing
+        :param id_: Entity identifier; -1 and None mean non-existing
         """
         self.repo = repo
         self.id = id_ if id_ is not None else '-1'
@@ -248,9 +243,9 @@ class WikibaseEntity:
     def get(self, force: bool = False) -> dict:
         """Fetch all entity data and cache it.
 
-        :param force: override caching
+        :param force: Override caching
         :raise NoWikibaseEntityError: if this entity doesn't exist
-        :return: actual data which entity holds
+        :return: Actual data which entity holds
         """
         if force or not hasattr(self, '_content'):
             identification = self._defined_by()
@@ -299,7 +294,7 @@ class WikibaseEntity:
 
          .. seealso:: :meth:`WikibasePage.editEntity`
 
-         .. versionchanged:: 8.0.1
+         .. version-changed:: 8.0.1
             Copy snak IDs/hashes (:phab:`T327607`)
 
         :param data: Data to be saved
@@ -372,7 +367,7 @@ class MediaInfo(WikibaseEntity):
 
     """Interface for MediaInfo entities on Commons.
 
-    .. versionadded:: 6.5
+    .. version-added:: 6.5
     """
 
     entity_type = 'mediainfo'
@@ -407,7 +402,7 @@ class MediaInfo(WikibaseEntity):
     def _defined_by(self, singular: bool = False) -> dict:
         """Function to provide the API parameters to identify the entity.
 
-        .. versionadded:: 8.5
+        .. version-added:: 8.5
 
         :param singular: Whether the parameter names should use the singular
                          form
@@ -452,13 +447,13 @@ class MediaInfo(WikibaseEntity):
            of this entity and their modifying may indirectly cause
            unwanted change to the live content
 
-        .. versionchanged:: 9.0
+        .. version-changed:: 9.0
            Added *pageid*, *ns*, *title*, *lastrevid*, *modified*, *id*
            values to ``_content`` attribute when it is loaded.
 
-        :param force: override caching
+        :param force: Override caching
         :raise NoWikibaseEntityError: if this entity doesn't exist
-        :return: actual data which entity holds
+        :return: Actual data which entity holds
         """
         if force or not hasattr(self, '_content'):
             if force:
@@ -512,7 +507,7 @@ class MediaInfo(WikibaseEntity):
         .. seealso:: :meth:`title`
 
         :param numeric: Strip the first letter and return an int
-        :raises NoWikibaseEntityError: if this entity is associated with
+        :raises NoWikibaseEntityError: If this entity is associated with
             a non-existing file
         """
         self._assert_has_id()
@@ -521,12 +516,12 @@ class MediaInfo(WikibaseEntity):
     def title(self) -> str:
         """Return ID as title of the MediaInfo.
 
-        .. versionadded:: 9.4
+        .. version-added:: 9.4
         .. seealso:: :meth:`getID`
 
-        :raises NoWikibaseEntityError: if this entity is associated with
+        :raises NoWikibaseEntityError: If this entity is associated with
             a non-existing file
-        :return: the entity identifier
+        :return: The entity identifier
         """
         return self.getID()
 
@@ -544,7 +539,7 @@ class MediaInfo(WikibaseEntity):
         >>> item = page.data_item()
         >>> item.editLabels({'en': 'Test file.'}) # doctest: +SKIP
 
-        .. versionadded:: 8.5
+        .. version-added:: 8.5
         """
         data = {'labels': labels}
         self.editEntity(data, **kwargs)
@@ -552,7 +547,7 @@ class MediaInfo(WikibaseEntity):
     def addClaim(self, claim, bot: bool = True, **kwargs) -> None:
         """Add a claim to the MediaInfo.
 
-        .. versionadded:: 8.5
+        .. version-added:: 8.5
 
         :param claim: The claim to add
         :type claim: pywikibot.page.Claim
@@ -569,10 +564,10 @@ class MediaInfo(WikibaseEntity):
     def removeClaims(self, claims, **kwargs) -> None:
         """Remove the claims from the MediaInfo.
 
-        .. versionadded:: 8.5
+        .. version-added:: 8.5
 
-        :param claims: list of claims to be removed
-        :type claims: list or pywikibot.Claim
+        :param claims: List of claims to be removed
+        :type claims: List or pywikibot.Claim
         """
         # this check allows single claims to be removed by pushing them into a
         # list of length one.
@@ -602,17 +597,16 @@ class WikibasePage(BasePage, WikibaseEntity):
         Page initialisation logic.
 
         :param site: Wikibase data site
-        :type site: pywikibot.site.DataSite
-        :param title: normalized title of the page
-        :type title: str
-        :keyword ns: namespace
+        :type site: Pywikibot.site.DataSite
+        :param title: Normalized title of the page
+        :keyword ns: Namespace
         :type ns: Namespace instance, or int
         :keyword entity_type: Wikibase entity type
-        :type entity_type: str ('item' or 'property')
-        :raises TypeError: incorrect use of parameters
-        :raises ValueError: incorrect namespace
+        :type entity_type: Literal['item' | 'property']
+        :raises TypeError: Incorrect use of parameters
+        :raises ValueError: Incorrect namespace
         :raises pywikibot.exceptions.Error: title parsing problems
-        :raises NotImplementedError: the entity type is not supported
+        :raises NotImplementedError: The entity type is not supported
         """
         if not isinstance(site, pywikibot.site.DataSite):
             raise TypeError('site must be a pywikibot.site.DataSite object')
@@ -721,9 +715,9 @@ class WikibasePage(BasePage, WikibaseEntity):
     def get(self, force: bool = False, *args, **kwargs) -> dict:
         """Fetch all page data, and cache it.
 
-        :param force: override caching
+        :param force: Override caching
         :raise NotImplementedError: a value in args or kwargs
-        :return: actual data which entity holds
+        :return: Actual data which entity holds
 
         .. note:: dicts returned by this method are references to content
            of this entity and their modifying may indirectly cause
@@ -806,7 +800,7 @@ class WikibasePage(BasePage, WikibaseEntity):
         .. seealso:: :meth:`WikibaseEntity.editEntity`
 
         :param data: Data to be saved
-        :keyword bool asynchronous: if True, launch a separate thread to
+        :keyword bool asynchronous: If True, launch a separate thread to
             edit asynchronously
         :keyword Callable[[WikibasePage, Optional[Exception]], Any] callback:
             a callable object that will be called after the entity has
@@ -889,18 +883,18 @@ class WikibasePage(BasePage, WikibaseEntity):
         """Add a claim to the entity.
 
         :param claim: The claim to add
-        :type claim: pywikibot.page.Claim
+        :type claim: Pywikibot.page.Claim
         :param bot: Whether to flag as bot (if possible)
-        :keyword asynchronous: if True, launch a separate thread to add
+        :keyword asynchronous: If True, launch a separate thread to add
             claim asynchronously
-        :type asynchronous: bool
-        :keyword callback: a callable object that will be called after
+        :type asynchronous: Bool
+        :keyword callback: A callable object that will be called after
             the claim has been added. It must take two arguments: (1) a
             WikibasePage object, and (2) an exception instance, which
             will be None if the entity was saved successfully. This is
             intended for use by bots that need to keep track of which
             saves were successful.
-        :type callback: callable
+        :type callback: Callable
         """
         if claim.on_item is not None:
             raise ValueError(
@@ -911,8 +905,8 @@ class WikibasePage(BasePage, WikibaseEntity):
     def removeClaims(self, claims, **kwargs) -> None:
         """Remove the claims from the entity.
 
-        :param claims: list of claims to be removed
-        :type claims: list or pywikibot.Claim
+        :param claims: List of claims to be removed
+        :type claims: List or pywikibot.Claim
         """
         # this check allows single claims to be removed by pushing them into a
         # list of length one.
@@ -948,17 +942,15 @@ class ItemPage(WikibasePage):
         'sitelinks': SiteLinkCollection,
     }
 
-    def __init__(self, site, title=None, ns=None) -> None:
+    def __init__(self, site, title=None, ns: str | None = None) -> None:
         """Initializer.
 
-        :param site: data repository
+        :param site: Data repository
         :type site: pywikibot.site.DataSite
-        :param title: identifier of item, "Q###",
-                      -1 or None for an empty item.
-        :type title: str
-        :type ns: namespace
+        :param title: Identifier of item, "Q###"; '-1' or None for an
+            empty item.
+        :param ns: Namespace, None for default site.item_namespace
         :type ns: Namespace instance, or int, or None
-            for default item_namespace
         """
         if ns is None:
             ns = site.item_namespace
@@ -1145,13 +1137,13 @@ class ItemPage(WikibasePage):
     ) -> dict[str, Any]:
         """Fetch all item data, and cache it.
 
-        :param force: override caching
-        :param get_redirect: return the item content, do not follow the
+        :param force: Override caching
+        :param get_redirect: Return the item content, do not follow the
                              redirect, do not raise an exception.
         :raise NotImplementedError: a value in args or kwargs
         :raise IsRedirectPageError: instance is a redirect page and
             get_redirect is not True
-        :return: actual data which entity holds
+        :return: Actual data which entity holds
 
         .. note:: dicts returned by this method are
            references to content of this entity and
@@ -1168,21 +1160,21 @@ class ItemPage(WikibasePage):
     def getRedirectTarget(self, *, ignore_section: bool = True):
         """Return the redirect target for this page.
 
-        .. versionadded:: 9.3
+        .. version-added:: 9.3
            *ignore_section* parameter
 
         .. seealso:: :meth:`page.BasePage.getRedirectTarget`
 
-        :param ignore_section: do not include section to the target even
+        :param ignore_section: Do not include section to the target even
             the link has one
 
-        :raises CircularRedirectError: page is a circular redirect
-        :raises InterwikiRedirectPageError: the redirect target is on
+        :raises CircularRedirectError: Page is a circular redirect
+        :raises InterwikiRedirectPageError: The redirect target is on
             another site
-        :raises Error: target page has wrong content model
-        :raises IsNotRedirectPageError: page is not a redirect
-        :raises RuntimeError: no redirects found
-        :raises SectionError: the section is not found on target page
+        :raises Error: Target page has wrong content model
+        :raises IsNotRedirectPageError: Page is not a redirect
+        :raises RuntimeError: No redirects found
+        :raises SectionError: The section is not found on target page
             and *ignore_section* is not set
         """
         target = super().getRedirectTarget(ignore_section=ignore_section)
@@ -1195,10 +1187,10 @@ class ItemPage(WikibasePage):
     def iterlinks(self, family=None):
         """Iterate through all the sitelinks.
 
-        :param family: string/Family object which represents what family
+        :param family: String/Family object which represents what family
             of links to iterate
-        :type family: str|pywikibot.family.Family
-        :return: iterator of pywikibot.Page objects
+        :type family: str | pywikibot.family.Family | None
+        :return: Iterator of pywikibot.Page objects
         :rtype: iterator
         """
         if not hasattr(self, 'sitelinks'):
@@ -1217,12 +1209,12 @@ class ItemPage(WikibasePage):
         If the item doesn't have a link to that site, raise
         NoSiteLinkError.
 
-        .. versionchanged:: 8.1
+        .. version-changed:: 8.1
            raises NoSiteLinkError instead of NoPageError.
 
         :param site: Site to find the linked page of.
         :type site: pywikibot.Site or database name
-        :param force: override caching
+        :param force: Override caching
         :raise IsRedirectPageError: instance is a redirect page
         :raise NoSiteLinkError: site is not in :attr:`sitelinks`
         """
@@ -1309,12 +1301,12 @@ class ItemPage(WikibasePage):
         You need to define an extra argument to make this work, like
         :code:`save=True`.
 
-        .. versionchanged:: 9.3
+        .. version-changed:: 9.3
            *botflag* keyword parameter was renamed to *bot*.
 
-        :param target_page: target of the redirect, this argument is
+        :param target_page: Target of the redirect, this argument is
             required.
-        :param force: if true, it sets the redirect target even the page
+        :param force: If true, it sets the redirect target even the page
             is not redirect.
         """
         if isinstance(target_page, str):
@@ -1349,7 +1341,7 @@ class ItemPage(WikibasePage):
         Return the first 'preferred' ranked Claim specified by Wikibase
         property or the first 'normal' one otherwise.
 
-        .. versionadded:: 10.4
+        .. version-added:: 10.4
 
         .. seealso:: :meth:`pywikibot.Page.get_best_claim`
 
@@ -1358,7 +1350,7 @@ class ItemPage(WikibasePage):
         :return: Claim object given by Wikibase property number
             for this page object.
 
-        :raises UnknownExtensionError: site has no Wikibase extension
+        :raises UnknownExtensionError: Site has no Wikibase extension
         """
 
         def find_best_claim(claims):
@@ -1385,16 +1377,16 @@ class ItemPage(WikibasePage):
     ) -> pywikibot.WbRepresentation | None:
         """Return the best value for this page at a given timestamp.
 
-        .. versionadded:: 10.4
+        .. version-added:: 10.4
 
-        :param prop: property id, "P###"
-        :param timestamp: the timestamp to check the value at
-        :param lang: the language to return the value in
+        :param prop: Property id, "P###"
+        :param timestamp: The timestamp to check the value at
+        :param lang: The language to return the value in
         :return: :class:`pywikibot.WbRepresentation` object given by
             Wikibase property number for this page object and valid for
             the given timestamp and language.
 
-        :raises NoWikibaseEntityError: site has no time interval properties
+        :raises NoWikibaseEntityError: Site has no time interval properties
         """
         fam = self.site.family
         if not hasattr(fam, 'interval_start_property') or \
@@ -1500,10 +1492,10 @@ class Property:
     def __init__(self, site, id: str, datatype: str | None = None) -> None:
         """Initializer.
 
-        :param site: data repository
+        :param site: Data repository
         :type site: pywikibot.site.DataSite
-        :param id: id of the property
-        :param datatype: datatype of the property; if not given, it will
+        :param id: Id of the property
+        :param datatype: Datatype of the property; if not given, it will
             be queried via the API
         """
         self.repo = site
@@ -1514,7 +1506,7 @@ class Property:
     def exists(self) -> bool:
         """Determine if the property exists in the data repository.
 
-        .. versionadded:: 9.4
+        .. version-added:: 9.4
         """
         try:
             self._type = self.repo.get_property_type(self)
@@ -1527,11 +1519,11 @@ class Property:
     def type(self) -> str:
         """Return the type of this property.
 
-        .. versionchanged:: 9.4
+        .. version-changed:: 9.4
            raises :exc:`NoWikibaseEntityError` if property does not
            exist.
 
-        :raises NoWikibaseEntityError: property does not exist
+        :raises NoWikibaseEntityError: Property does not exist
         """
         return self.repo.get_property_type(self)
 
@@ -1569,16 +1561,18 @@ class PropertyPage(WikibasePage, Property):
         'claims': ClaimCollection,
     }
 
-    def __init__(self, source, title=None, datatype=None) -> None:
+    def __init__(self,
+                 source,
+                 title: str | None = None,
+                 datatype: str | None = None) -> None:
         """Initializer.
 
-        :param source: data repository property is on
+        :param source: Data repository property is on
         :type source: pywikibot.site.DataSite
-        :param title: identifier of property, like "P##", "-1" or None
+        :param title: Identifier of property, like "P##", "-1" or None
             for an empty property.
-        :type title: str
         :param datatype: Datatype for a new property.
-        :type datatype: str
+        :type datatype: Str
         """
         # Special case for new property.
         if title is None or title == '-1':
@@ -1600,9 +1594,9 @@ class PropertyPage(WikibasePage, Property):
     def get(self, force: bool = False, *args, **kwargs) -> dict:
         """Fetch the property entity, and cache it.
 
-        :param force: override caching
+        :param force: Override caching
         :raise NotImplementedError: a value in args or kwargs
-        :return: actual data which entity holds
+        :return: Actual data which entity holds
 
         .. note:: dicts returned by this method are
            references to content of this entity and
@@ -1693,13 +1687,13 @@ class Claim(Property):
         :param site: Repository where the property of the claim is
             defined. Note that this does not have to correspond to the
             repository where the claim has been stored.
-        :type site: pywikibot.site.DataSite
-        :param pid: property id, with "P" prefix
-        :param snak: snak identifier for claim
-        :param hash: hash identifier for references
-        :param is_reference: whether specified claim is a reference
-        :param is_qualifier: whether specified claim is a qualifier
-        :param rank: rank for claim
+        :type site: Pywikibot.site.DataSite
+        :param pid: Property id, with "P" prefix
+        :param snak: Snak identifier for claim
+        :param hash: Hash identifier for references
+        :param is_reference: Whether specified claim is a reference
+        :param is_qualifier: Whether specified claim is a qualifier
+        :param rank: Rank for claim
         """
         Property.__init__(self, site, pid, **kwargs)
         self.snak = snak
@@ -1824,7 +1818,7 @@ class Claim(Property):
     def fromJSON(cls, site, data: dict[str, Any]) -> Claim:
         """Create a claim object from JSON returned in the API call.
 
-        .. versionchanged:: 9.4
+        .. version-changed:: 9.4
            print a warning if the Claim.type is not given and missing in
            the wikibase.
 
@@ -1963,7 +1957,7 @@ class Claim(Property):
         """Set the target value in the local object.
 
         :param value: The new target value.
-        :type value: object
+        :type value: Object
         :exception ValueError: if value is not of the type required for
             the Claim type.
         """
@@ -1974,14 +1968,13 @@ class Claim(Property):
 
     def changeTarget(
         self,
-        value=None,
-        snaktype: str = 'value',
+        value: Any = None,
+        snaktype: Literal['value' | 'somevalue' | 'novalue'] = 'value',
         **kwargs
     ) -> None:
         """Set the target value in the data repository.
 
         :param value: The new target value.
-        :type value: object
         :param snaktype: The new snak type ('value', 'somevalue', or
             'novalue').
         """
@@ -2000,22 +1993,19 @@ class Claim(Property):
 
         None is returned if no target is set
 
-        :return: object
+        :return: Object
         """
         return self.target
 
-    def getSnakType(self) -> str:
-        """Return the type of snak.
-
-        :return: str ('value', 'somevalue' or 'novalue')
-        """
+    def getSnakType(self) -> Literal['value' | 'somevalue' | 'novalue']:
+        """Return the type of snak."""
         return self.snaktype
 
-    def setSnakType(self, value) -> None:
+    def setSnakType(self,
+                    value: Literal['value' | 'somevalue' | 'novalue']) -> None:
         """Set the type of snak.
 
         :param value: Type of snak
-        :type value: str ('value', 'somevalue', or 'novalue')
         """
         if value in self.SNAK_TYPES:
             self.snaktype = value
@@ -2055,16 +2045,16 @@ class Claim(Property):
     def addSource(self, claim, **kwargs) -> None:
         """Add the claim as a source.
 
-        :param claim: the claim to add
-        :type claim: pywikibot.Claim
+        :param claim: The claim to add
+        :type claim: Pywikibot.Claim
         """
         self.addSources([claim], **kwargs)
 
     def addSources(self, claims, **kwargs) -> None:
         """Add the claims as one source.
 
-        :param claims: the claims to add
-        :type claims: list of pywikibot.Claim
+        :param claims: The claims to add
+        :type claims: List of pywikibot.Claim
         """
         self._assert_mainsnak('Cannot add sources to a {}')
         for claim in claims:
@@ -2087,16 +2077,16 @@ class Claim(Property):
     def removeSource(self, source, **kwargs) -> None:
         """Remove the source. Call removeSources().
 
-        :param source: the source to remove
-        :type source: pywikibot.Claim
+        :param source: The source to remove
+        :type source: Pywikibot.Claim
         """
         self.removeSources([source], **kwargs)
 
     def removeSources(self, sources, **kwargs) -> None:
         """Remove the sources.
 
-        :param sources: the sources to remove
-        :type sources: list of pywikibot.Claim
+        :param sources: The sources to remove
+        :type sources: List of pywikibot.Claim
         """
         self._assert_mainsnak('Cannot remove sources from a {}')
         self._assert_attached()
@@ -2110,7 +2100,7 @@ class Claim(Property):
     def addQualifier(self, qualifier, **kwargs) -> None:
         """Add the given qualifier.
 
-        :param qualifier: the qualifier to add
+        :param qualifier: The qualifier to add
         :type qualifier: pywikibot.page.Claim
         """
         self._assert_mainsnak('Cannot add qualifiers to a {}')
@@ -2130,7 +2120,7 @@ class Claim(Property):
     def removeQualifier(self, qualifier, **kwargs) -> None:
         """Remove the qualifier. Call removeQualifiers().
 
-        :param qualifier: the qualifier to remove
+        :param qualifier: The qualifier to remove
         :type qualifier: pywikibot.page.Claim
         """
         self.removeQualifiers([qualifier], **kwargs)
@@ -2138,8 +2128,8 @@ class Claim(Property):
     def removeQualifiers(self, qualifiers, **kwargs) -> None:
         """Remove the qualifiers.
 
-        :param qualifiers: the qualifiers to remove
-        :type qualifiers: list of pywikibot.Claim
+        :param qualifiers: The qualifiers to remove
+        :type qualifiers: List of pywikibot.Claim
         """
         self._assert_mainsnak('Cannot remove qualifiers from a {}')
         self._assert_attached()
@@ -2160,8 +2150,8 @@ class Claim(Property):
         - WbMonolingualText text equality
         - direct equality
 
-        :param value: the value to compare with
-        :return: true if the Claim's target is equal to the value provided,
+        :param value: The value to compare with
+        :return: True if the Claim's target is equal to the value provided,
             false otherwise
         """
         if (isinstance(self.target, WikibaseEntity)
@@ -2193,9 +2183,9 @@ class Claim(Property):
     def has_qualifier(self, qualifier_id: str, target) -> bool:
         """Check whether Claim contains specified qualifier.
 
-        :param qualifier_id: id of the qualifier
-        :param target: qualifier target to check presence of
-        :return: true if the qualifier was found, false otherwise
+        :param qualifier_id: Id of the qualifier
+        :param target: Qualifier target to check presence of
+        :return: True if the qualifier was found, false otherwise
         """
         self._assert_mainsnak('{}s cannot have qualifiers')
         return any(qualifier.target_equals(target)
@@ -2242,7 +2232,7 @@ class Claim(Property):
     def has_better_rank(self, other: Claim | None) -> bool:
         """Check if this claim has a better rank than the other claim.
 
-        .. versionadded:: 10.6
+        .. version-added:: 10.6
 
         :param other: The other claim to compare with.
         :return: True if this claim has a better rank, False otherwise.
@@ -2288,14 +2278,13 @@ class LexemePage(WikibasePage):
         # 'senses': LexemeSenseCollection,
     }
 
-    def __init__(self, site, title=None) -> None:
+    def __init__(self, site, title: str | None = None) -> None:
         """Initializer.
 
-        :param site: data repository
-        :type site: pywikibot.site.DataSite
-        :param title: identifier of lexeme, "L###",
-            -1 or None for an empty lexeme.
-        :type title: str or None
+        :param site: Data repository
+        :type site: Pywikibot.site.DataSite
+        :param title: Identifier of lexeme, "L###"; '-1' or None for an
+            empty lexeme.
         """
         # Special case for empty lexeme.
         if title is None or title == '-1':
@@ -2333,19 +2322,21 @@ class LexemePage(WikibasePage):
 
         return data
 
-    def get(self, force=False, get_redirect=False, *args, **kwargs):
+    def get(self,
+            force: bool = False,
+            get_redirect: bool = False,
+            *args,
+            **kwargs):
         """Fetch all lexeme data, and cache it.
-
-        :param force: override caching
-        :type force: bool
-        :param get_redirect: return the lexeme content, do not follow the
-            redirect, do not raise an exception.
-        :type get_redirect: bool
-        :raise NotImplementedError: a value in args or kwargs
 
         .. note:: dicts returned by this method are references to content
            of this entity and their modifying may indirectly cause
            unwanted change to the live content
+
+        :param force: Override caching
+        :param get_redirect: Return the lexeme content, do not follow the
+            redirect, do not raise an exception.
+        :raise NotImplementedError: a value in args or kwargs
         """
         data = super().get(force, *args, **kwargs)
 
@@ -2373,7 +2364,7 @@ class LexemePage(WikibasePage):
         """Helper function to expand data into the Wikibase API structure.
 
         :param data: The dict to normalize
-        :return: the altered dict from parameter data.
+        :return: The altered dict from parameter data.
         """
         new_data = WikibasePage._normalizeData(data)
         for prop in ('language', 'lexicalCategory'):
@@ -2391,18 +2382,15 @@ class LexemePage(WikibasePage):
 
         :param form: The form to add
         :type form: Form
-        :keyword bot: Whether to flag as bot (if possible)
-        :type bot: bool
-        :keyword asynchronous: if True, launch a separate thread to add
-            form asynchronously
-        :type asynchronous: bool
-        :keyword callback: a callable object that will be called after
-            the claim has been added. It must take two arguments: (1) a
-            LexemePage object, and (2) an exception instance, which will
-            be None if the entity was saved successfully. This is
-            intended for use by bots that need to keep track of which
-            saves were successful.
-        :type callback: callable
+        :keyword bool bot: Whether to flag as bot (if possible)
+        :keyword bool asynchronous: If True, launch a separate thread to
+            add form asynchronously
+        :keyword Callable callback: A callable object that will be
+            called after the claim has been added. It must take two
+            arguments: (1) a LexemePage object, and (2) an exception
+            instance, which will be None if the entity was saved
+            successfully. This is intended for use by bots that need to
+            keep track of which saves were successful.
         """
         if form.on_lexeme is not None:
             raise ValueError('The provided LexemeForm instance is already '
@@ -2499,18 +2487,15 @@ class LexemeSubEntity(WikibaseEntity):
 
         :param claim: The claim to add
         :type claim: Claim
-        :keyword bot: Whether to flag as bot (if possible)
-        :type bot: bool
-        :keyword asynchronous: if True, launch a separate thread to add
-            claim asynchronously
-        :type asynchronous: bool
-        :keyword callback: a callable object that will be called after
-            the claim has been added. It must take two arguments: (1) a
-            Form object, and (2) an exception instance, which will be
-            None if the form was saved successfully. This is intended
-            for use by bots that need to keep track of which saves were
-            successful.
-        :type callback: callable
+        :keyword bool bot: Whether to flag as bot (if possible)
+        :keyword bool asynchronous: If True, launch a separate thread to
+            add claim asynchronously
+        :keyword Callable callback: A callable object that will be
+            called after the claim has been added. It must take two
+            arguments: (1) a Form object, and (2) an exception instance,
+            which will be None if the form was saved successfully. This
+            is intended for use by bots that need to keep track of which
+            saves were successful.
         """
         self.repo.addClaim(self, claim, **kwargs)
         claim.on_item = self
@@ -2518,8 +2503,8 @@ class LexemeSubEntity(WikibaseEntity):
     def removeClaims(self, claims, **kwargs) -> None:
         """Remove the claims from the form.
 
-        :param claims: list of claims to be removed
-        :type claims: list or pywikibot.Claim
+        :param claims: List of claims to be removed
+        :type claims: List or pywikibot.Claim
         """
         # this check allows single claims to be removed by pushing them into a
         # list of length one.
@@ -2570,7 +2555,7 @@ class LexemeForm(LexemeSubEntity):
     def get(self, force: bool = False) -> dict:
         """Fetch all form data, and cache it.
 
-        :param force: override caching
+        :param force: Override caching
 
         .. note:: dicts returned by this method are references to content
            of this entity and their modifying may indirectly cause

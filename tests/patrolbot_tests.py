@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
-"""Tests for the patrol script."""
 #
-# (C) Pywikibot team, 2015-2023
+# (C) Pywikibot team, 2015-2026
 #
 # Distributed under the terms of the MIT license.
 #
+"""Tests for the patrol script."""
 from __future__ import annotations
 
+import unittest
 from contextlib import suppress
 
 from scripts.patrol import PatrolBot
-from tests.aspects import DefaultDrySiteTestCase, unittest
+from tests.aspects import DefaultDrySiteTestCase
 
 
 DUMMY_PAGE_TUPLES = """

@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+#
+# (C) Pywikibot team, 2007-2026
+#
+# Distributed under the terms of the MIT license.
+#
 """This script fixes links that contain common spelling mistakes.
 
 This is only possible on wikis that have a template for these misspellings.
@@ -19,18 +24,13 @@ Command line options:
                misspelling pages, starting at XY. If the -start argument is not
                given, it starts at the beginning.
 """
-#
-# (C) Pywikibot team, 2007-2025
-#
-# Distributed under the terms of the MIT license.
-#
 from __future__ import annotations
 
+from collections.abc import Generator
 from itertools import chain
 
 import pywikibot
 from pywikibot import i18n, pagegenerators
-from pywikibot.backports import Generator
 
 
 try:

@@ -1,23 +1,28 @@
+#
+# (C) Pywikibot team, 2003-2026
+#
+# Distributed under the terms of the MIT license.
+#
 """A window with a textfield where the user can edit.
 
 Useful for editing the contents of an article.
 
 .. note:: idlelib, tkinter and pillow modules are required.
 
-.. warning::
-   With Pillow 10.0, 10.1 no wheels for 32-bit Python on Windows are
-   supported. Pillow 10.2 supports it again. Either you have to update
-   your Python using a 64-bit version or you have to
-   :command:`pip install "pillow>8.1.1,!=10.0,!=10.1"`.
+.. caution::
+   Pillow may not be installable on GraalPy.
+
+.. danger::
+   Due to security vulnerability, use Pillow >= 12.2.0.
+   Requires PyPy >= 3.11 or CPython >= 3.10.
 
 .. seealso:: :mod:`editor`
 """
-#
-# (C) Pywikibot team, 2003-2025
-#
-# Distributed under the terms of the MIT license.
-#
 from __future__ import annotations
+
+import pathlib
+
+from packaging.version import Version
 
 import pywikibot
 
@@ -378,11 +383,11 @@ class EditBoxWindow(Frame):
              highlight: str | None = None) -> str | None:
         """Provide user with editor to modify text.
 
-        :param text: the text to be edited
-        :param jumpIndex: position at which to put the caret
-        :param highlight: each occurrence of this substring will be
+        :param text: The text to be edited
+        :param jumpIndex: Position at which to put the caret
+        :param highlight: Each occurrence of this substring will be
             highlighted
-        :return: the modified text, or None if the user didn't save the
+        :return: The modified text, or None if the user didn't save the
             text file in his text editor
         """
         self.text = None
@@ -509,16 +514,35 @@ class Tkdialog:
         self.description_scrollbar.grid(row=14, column=5)
 
     @staticmethod
-    def get_image(photo, width, height):
-        """Take the BytesIO object and build an imageTK thumbnail."""
+    def get_image(photo: str, width, height):
+        """Take the BytesIO object and build an imageTK thumbnail.
+
+        .. version-changed:: 11.1
+           PSD files are not allowed for ``Pillow < 12.1.1``.
+        .. version-changed:: 11.2
+           ``Pillow >= 12.2.0`` is required due to security
+           vulnerability.
+
+        :raises ImportError: Pillow is not installed
+        :raises RuntimeError: Pillow < 12.2.0
+        """
         try:
-            from PIL import Image, ImageTk
+            from PIL import Image, ImageTk, __version__
         except ImportError:
             pywikibot.warning('This script requires ImageTk from the'
                               'Python Imaging Library (PIL).')
             raise
 
-        image = Image.open(photo)
+        pil_version = Version(__version__)
+        if pil_version < Version('12.2.0'):
+            raise RuntimeError(
+                f'Pillow {pil_version} is not allowed due to Pillow security'
+                ' advisory. Please update your Pillow and if necessary your'
+                ' Python.'
+            )
+
+        path = pathlib.Path(photo)
+        image = Image.open(path)
         image.thumbnail((width, height))
         return ImageTk.PhotoImage(image)
 
@@ -536,7 +560,7 @@ class Tkdialog:
     def show_dialog(self) -> tuple[str, str, bool]:
         """Activate the dialog.
 
-        :return: new description, name, and if the image is skipped
+        :return: New description, name, and if the image is skipped
         """
         self.root.mainloop()
         return self.photo_description, self.filename, self.skip

@@ -1,3 +1,8 @@
+#
+# (C) Pywikibot team, 2017-2026
+#
+# Distributed under the terms of the MIT license.
+#
 """Server-Sent Events client.
 
 This file is part of the Pywikibot framework.
@@ -6,15 +11,10 @@ This module requires requests-sse to be installed::
 
     pip install "requests-sse>=0.5.0"
 
-.. versionadded:: 3.0
-.. versionchanged:: 10.0
+.. version-added:: 3.0
+.. version-changed:: 10.0
    ``requests-sse`` package is required instead of ``sseclient``.
 """
-#
-# (C) Pywikibot team, 2017-2025
-#
-# Distributed under the terms of the MIT license.
-#
 from __future__ import annotations
 
 import json
@@ -26,8 +26,9 @@ from requests.packages.urllib3.exceptions import ProtocolError
 from requests.packages.urllib3.util.response import httplib
 
 from pywikibot import Site, Timestamp, config, debug, warning
-from pywikibot.backports import Dict, List, NoneType
+from pywikibot.backports import NoneType
 from pywikibot.comms.http import user_agent
+from pywikibot.site import BaseSite
 from pywikibot.tools import cached, deprecated_args
 from pywikibot.tools.collections import GeneratorWrapper
 
@@ -60,7 +61,7 @@ class EventStreams(GeneratorWrapper):
     >>> print(msg)  # doctest: +SKIP
     edit on page Q2190037 by KrBot.
     >>> from pprint import pprint
-    >>> pprint(change, width=75)  # doctest: +SKIP
+    >>> pprint(change, width=75, indent=1)  # doctest: +SKIP
     {'$schema': '/mediawiki/recentchange/1.0.0',
      'bot': True,
      'comment': '/* wbsetreference-set:2| */ [[Property:P10585]]: 96FPN, см. '
@@ -97,22 +98,11 @@ class EventStreams(GeneratorWrapper):
      'type': 'edit',
      'user': 'KrBot',
      'wiki': 'wikidatawiki'}
-    >>> pprint(next(stream), width=75)  # doctest: +ELLIPSIS
-    {'$schema': '/mediawiki/recentchange/1.0.0',
-     'bot': True,
-     ...
-     'server_name': 'www.wikidata.org',
-     'server_script_path': '/w',
-     'server_url': 'https://www.wikidata.org',
-     ...
-     'type': 'edit',
-     'user': ...,
-     'wiki': 'wikidatawiki'}
     >>> del stream
 
-    .. versionchanged:: 7.6
+    .. version-changed:: 7.6
        subclassed from :class:`tools.collections.GeneratorWrapper`.
-    .. versionchanged:: 10.0
+    .. version-changed:: 10.0
        *retry* value is doubled for each consecutive connect try.
     """
 
@@ -120,16 +110,22 @@ class EventStreams(GeneratorWrapper):
     def __init__(self, **kwargs) -> None:
         """Initializer.
 
-        :keyword bool canary: if True, include canary events, see
+        .. seealso:: https://stream.wikimedia.org/?doc#streams for
+           available Wikimedia stream types to be passed with `streams`
+           parameter.
+        .. note:: *retry* keyword argument is used instead of the
+           underlying *reconnection_time* argument which is ignored.
+
+        :keyword bool canary: If True, include canary events, see
             https://w.wiki/7$2z for more info.
-        :keyword APISite site: a project site object. Used if no *url*
+        :keyword APISite site: A project site object. Used if no *url*
             is given.
         :keyword int retry: Number of milliseconds to wait after disconnects
             before attempting to reconnect. The server may change this
             by including a 'retry' line in a message. Retries are handled
             automatically.
 
-            .. versionchanged:: 10.0
+            .. version-changed:: 10.0
                5 seconds are used instead of 3 seconds as default.
 
         :keyword pywikibot.Timestamp | str since: a timestamp for older
@@ -137,14 +133,14 @@ class EventStreams(GeneratorWrapper):
             history available but is not guaranteed. It may be given as
             a pywikibot.Timestamp, an ISO 8601 string or a mediawiki
             timestamp string.
-        :keyword Iterable[str] | str streams: event stream types.
+        :keyword Iterable[str] | str streams: Event stream types.
             Mandatory when no url is given. Multiple streams may be
             given as a string with comma separated stream types or an
             iterable of strings
         :keyword int | float | tuple[int | float, int | float] timeout:
             a timeout value indication how long to wait to send data
             before giving up
-        :keyword str url: an url retrieving events from. Will be set up
+        :keyword str url: An url retrieving events from. Will be set up
             to a default url using _site.family settings, stream types
             and timestamp
 
@@ -162,24 +158,19 @@ class EventStreams(GeneratorWrapper):
         :keyword int chunk_size: [*requests*] A maximum size of the chunk
             for chunk-encoded requests.
 
-            .. versionchanged:: 10.0
+            .. version-changed:: 10.0
                None is used instead of 1024 as default value.
 
         :param kwargs: Other keyword arguments passed to `requests_sse`
             and `requests` library
-        :raises ModuleNotFoundError: requests-sse is not installed
-        :raises NotImplementedError: no stream types specified
-
-        .. seealso:: https://stream.wikimedia.org/?doc#streams for
-           available Wikimedia stream types to be passed with `streams`
-           parameter.
-        .. note:: *retry* keyword argument is used instead of the
-           underlying *reconnection_time* argument which is ignored.
+        :raises ModuleNotFoundError: requests-sse package is not
+            installed
+        :raises NotImplementedError: No stream types specified
         """
         if isinstance(EventSource, ModuleNotFoundError):
             raise ImportError(INSTALL_MSG) from EventSource
 
-        self.filter: Dict[str, List[Any]] = {'all': [], 'any': [], 'none': []}
+        self.filter: dict[str, list[Any]] = {'all': [], 'any': [], 'none': []}
         self._total: int | None = None
         self._canary = kwargs.pop('canary', False)
 
@@ -234,7 +225,7 @@ class EventStreams(GeneratorWrapper):
     def url(self) -> str:
         """Get the EventStream's url.
 
-        :raises NotImplementedError: no stream types specified
+        :raises NotImplementedError: No stream types specified
         """
         if self._streams is None:
             raise NotImplementedError(
@@ -303,16 +294,15 @@ class EventStreams(GeneratorWrapper):
 
         Explanation for the result of the filter function:
 
-        1. ``return data['sever_name'] == 'de.wikipedia.org'``
+        1. ``return data['server_name'] == 'de.wikipedia.org'``
         2. ``return data['type'] in ('edit', 'log')``
         3. ``return data['bot'] is True``
 
-        :keyword ftype: The filter type, one of 'all', 'any', 'none'.
+        :keyword str ftype: The filter type, one of 'all', 'any', 'none'.
             Default value is 'all'
-        :type ftype: str
-        :param args: You may pass your own filter functions here.
-            Every function should be able to handle the data dict from events.
-        :type args: callable
+        :param Callable args: You may pass your own filter functions
+            here. Every function should be able to handle the data dict
+            from events.
         :param kwargs: Any key returned by event data with an event data value
             for this given key.
         :type kwargs: str, list, tuple or other sequence
@@ -353,7 +343,7 @@ class EventStreams(GeneratorWrapper):
 
         See the description of register_filter() how it works.
 
-        :param data: event data dict used by filter functions
+        :param data: Event data dict used by filter functions
         """
         if not self._canary and data.get('meta', {}).get('domain') == 'canary':
             return False  # T266798
@@ -373,7 +363,7 @@ class EventStreams(GeneratorWrapper):
     def generator(self):
         """Inner generator.
 
-        .. versionchanged:: 7.6
+        .. version-changed:: 7.6
            changed from iterator method to generator property
         """
         n = 0
@@ -417,16 +407,15 @@ class EventStreams(GeneratorWrapper):
         del self.source
 
 
-def site_rc_listener(site, total: int | None = None):
+def site_rc_listener(site: BaseSite, total: int | None = None):
     """Yield changes received from EventStream.
 
-    :param site: the Pywikibot.Site object to yield live recent changes
+    :param site: The pywikibot.Site object to yield live recent changes
         for
-    :type site: Pywikibot.BaseSite
-    :param total: the maximum number of changes to return
-    :return: pywikibot.comms.eventstream.rc_listener configured for
-        given site
-    :raises ModuleNotFoundError: requests-sse installation is required
+    :param total: The maximum number of changes to return
+    :return: A recent changes listener configured for given site
+    :raises ModuleNotFoundError: requests-sse package installation is
+        required
     """
     if isinstance(EventSource, ModuleNotFoundError):
         raise ModuleNotFoundError(INSTALL_MSG) from EventSource

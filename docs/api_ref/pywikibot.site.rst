@@ -18,6 +18,8 @@
 .. automodule:: pywikibot.site._basesite
 
    .. autoclass:: BaseSite
+      :members:
+      :special-members: __getattr__
 
       .. method:: category_redirects(fallback: str = '_default')
 
@@ -32,7 +34,7 @@
 
          Return tuple of edit restricted templates.
 
-         .. versionadded:: 3.0
+         .. version-added:: 3.0
          .. seealso:: :meth:`family.Family.get_edit_restricted_templates`
 
          :rtype: tuple[str, ...]
@@ -42,7 +44,7 @@
 
          Return tuple of edit restricted templates.
 
-         .. versionadded:: 3.0
+         .. version-added:: 3.0
          .. seealso:: :meth:`family.Family.get_archived_page_templates`
 
          :rtype: tuple[str, ...]
@@ -65,7 +67,7 @@
          May be overridden to return 'http'. Other protocols are not
          supported.
 
-         .. versionchanged:: 8.2
+         .. version-changed:: 8.2
             ``https`` is returned instead of ``http``.
          .. seealso:: :meth:`family.Family.protocol`
 
@@ -85,6 +87,55 @@
 
 .. automodule:: pywikibot.site._generators
    :synopsis: Objects representing API generators to MediaWiki site
+
+.. currentmodule:: pywikibot.site._generators
+
+.. method:: GeneratorsMixin.alllinks(start='', prefix='', namespace=0, unique=False, fromids=False, total=None)
+
+   Iterate all links to pages (which need not exist) in one namespace.
+
+   .. note::
+      In practice, links that were found on pages that have
+      been deleted may not have been removed from the links table,
+      so this method can return false positives.
+
+   .. caution::
+      *unique* parameter is no longer supported by
+      MediaWiki 1.43 or higher. Pywikibot uses
+      :func:`tools.itertools.filter_unique` in that case which
+      might be memory intensive. Use it with care.
+
+   .. important::
+      Using *namespace* option different from ``0``
+      needs a lot of time on Wikidata site.
+
+   .. version-deprecated:: 10.7
+      This method is dysfunctional and should no longer be used. It
+      will be removed in Pywikibot 11.
+
+   .. version-removed:: 11.0
+      This method was dysfunctional and removed, see the following tickets for details:
+      :phab:`T359427`, :phab:`T364617` and :phab:`T407708`
+
+   .. seealso::
+      - :api:`Alllinks`
+      - :meth:`pagebacklinks`
+      - :meth:`pagelinks`
+
+   :param start: Start at this title (page need not exist).
+   :param prefix: Only yield pages starting with this string.
+   :param namespace: Iterate pages from this (single) namespace
+   :param unique: If True, only iterate each link title once
+       (default: False)
+   :param fromids: if True, include the pageid of the page
+       containing each link (default: False) as the '_fromid'
+       attribute of the Page; cannot be combined with *unique*
+   :param total: Limit the total number of items
+   :raises KeyError: the *namespace* identifier was not resolved
+   :raises TypeError: the *namespace* identifier has an
+       inappropriate type such as bool, or an iterable with more
+       than one namespace
+   :rtype: Generator[pywikibot.Page]
 
 :mod:`DataSite<pywikibot.site.\_datasite>` --- API Interface for Wikibase
 =========================================================================

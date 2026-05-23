@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-r"""Visualizes category hierarchy.
+#
+# (C) Pywikibot team, 2022-2026
+#
+# Distributed under the terms of the MIT license.
+#
+"""Visualizes category hierarchy.
 
 Generates graphical representation in formats dot, svg and html5
 of category hierarchy.
@@ -23,6 +28,9 @@ optional arguments:
 -downsize K   font size divider for subcategories. 4 by default Use 1
               for the same font size
 
+.. attention::
+   Beside ``pydot`` package the Graphviz visualization software must be
+   installed. Download it from https://www.graphviz.org/download/.
 .. seealso:: https://graphviz.org/doc/info/attrs.html
    for graphviz style definitions.
 
@@ -35,18 +43,13 @@ Visualizes main category:
 
 Extended example with style settings:
 
-    pwb.py category_graph -from Life -downsize 1.5 \
-    -style 'graph[rankdir=BT ranksep=0.5] node[shape=circle style=filled \
+    pwb.py category_graph -from Life -downsize 1.5 \\
+    -style 'graph[rankdir=BT ranksep=0.5] node[shape=circle style=filled \\
     fillcolor=green] edge[style=dashed penwidth=3]'
 
 
-.. versionadded:: 8.0
+.. version-added:: 8.0
 """
-#
-# (C) Pywikibot team, 2022-2025
-#
-# Distributed under the terms of the MIT license.
-#
 from __future__ import annotations
 
 import argparse
@@ -195,7 +198,13 @@ class CategoryGraphBot(SingleSiteBot):
         pywikibot.info(self.to + '.gv')
         self.dot.write(self.to + '.gv', encoding='utf-8')
         pywikibot.info(self.to + '.svg')
-        self.dot.write_svg(self.to + '.svg', encoding='utf-8')
+        try:
+            self.dot.write_svg(self.to + '.svg', encoding='utf-8')
+        except FileNotFoundError as e:
+            pywikibot.error(f'{e}\nThe Graphviz visualization software must'
+                            ' be installed first.\nDownload it from'
+                            ' https://www.graphviz.org/download/')
+            return
         pywikibot.info(self.to + '.html')
 
         header = ('<head><meta charset="UTF-8"/>'

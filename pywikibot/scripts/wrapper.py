@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+#
+# (C) Pywikibot team, 2012-2026
+#
+# Distributed under the terms of the MIT license.
+#
 """Wrapper script to invoke pywikibot-based scripts.
 
 This wrapper script invokes script by its name in this search order:
@@ -29,24 +34,19 @@ will fix up search paths so the package does not need to be installed, etc.
 Currently, `<pwb options>` are :ref:`global options`. This can be used
 for tests to set the default site (see :phab:`T216825`)::
 
-    python pwb.py -lang:de bot_tests -v
+    python pwb.py -code:de bot_tests -v
 
 .. seealso:: :mod:`pwb` entry point
-.. versionchanged:: 7.0
+.. version-changed:: 7.0
    pwb wrapper was added to the Python site package lib.
-.. versionchanged:: 7.7
+.. version-changed:: 7.7
    pwb wrapper is able to set ``PYWIKIBOT_TEST_...`` environment variables,
    see :ref:`Environment variables`.
-.. versionchanged:: 8.0
+.. version-changed:: 8.0
    renamed to wrapper.py.
-.. versionchanged:: 9.4
+.. version-changed:: 9.4
    enable external scripts via entry points.
 """
-#
-# (C) Pywikibot team, 2012-2025
-#
-# Distributed under the terms of the MIT license.
-#
 from __future__ import annotations
 
 import importlib.metadata
@@ -68,7 +68,7 @@ def check_pwb_versions(package: str) -> None:
     """Validate package version and scripts version.
 
     Rules:
-        - Pywikibot version must not be older than scrips version
+        - Pywikibot version must not be older than scripts version
         - Scripts version must not be older than previous Pywikibot version
           due to deprecation policy
     """
@@ -116,12 +116,12 @@ def check_pwb_versions(package: str) -> None:
 def run_python_file(filename: str, args: list[str], package=None) -> None:
     """Run a python file as if it were the main program on the command line.
 
-    .. versionchanged:: 7.7
+    .. version-changed:: 7.7
        Set and restore ``PYWIKIBOT_TEST_...`` environment variables.
 
     :param filename: The path to the file to execute, it need not be a
         .py file.
-    :param args: is the argument list to present as sys.argv, as strings.
+    :param args: Is the argument list to present as sys.argv, as strings.
     :param package: The package of the script. Used for checks.
     :type package: Optional[module]
     """
@@ -178,10 +178,10 @@ def handle_args(
 ) -> tuple[str, list[str], list[str], list[str]]:
     """Handle args and get filename.
 
-    .. versionchanged:: 7.7
+    .. version-changed:: 7.7
        Catch ``PYWIKIBOT_TEST_...`` environment variables.
 
-    :return: filename, script args, local pwb args, environment variables
+    :return: Filename, script args, local pwb args, environment variables
     """
     fname = None
     local = []
@@ -220,8 +220,9 @@ def _print_requirements(requirements,
     else:
         format_string = '\nA package necessary for {} is {}.'
     print(format_string.format(script or 'pywikibot', variant))
-    print('Please update required module{} with:\n\n'
-          .format('s' if len(requirements) > 1 else ''))
+    print('Please {} required module{} with:\n\n'
+          .format('install' if variant == 'missing' else 'update',
+                  's' if len(requirements) > 1 else ''))
 
     for requirement in requirements:
         print(f"    pip install \"{str(requirement).partition(';')[0]}\"\n")
@@ -235,15 +236,24 @@ def check_modules(script: str | None = None) -> bool:
 
     :param script: The script name to be checked for dependencies
     :return: True if all dependencies are installed
-    :raise RuntimeError: wrong Python version found in setup.py
+    :raise RuntimeError: wrong Python version found in setup.py or
+        function is called in site-package environment.
     """
-    from packaging.requirements import Requirement
+    if site_package:
+        raise RuntimeError(
+            "check_modules function shouldn't be called from site-package"
+        )
 
-    from setup import script_deps
+    try:
+        from packaging.requirements import Requirement
+    except ModuleNotFoundError:
+        _print_requirements(['packaging'], None, 'missing')
+        sys.exit()
 
     missing_requirements = []
     version_conflicts = []
 
+    from setup import script_deps
     if script:
         dependencies = script_deps.get(Path(script).name, [])
     else:
@@ -383,11 +393,11 @@ def find_alternates(filename, script_paths):
 def find_filename(filename):
     """Search for the filename in the given script paths.
 
-    .. versionchanged:: 7.0
+    .. version-changed:: 7.0
        Search users_scripts_paths in config.base_dir
-    .. versionchanged:: 9.0
+    .. version-changed:: 9.0
        Add config.base_dir to search path
-    .. versionchanged:: 9.4
+    .. version-changed:: 9.4
        Search in entry point paths
     """
     from pywikibot import config
@@ -466,7 +476,7 @@ def find_filename(filename):
 def execute() -> bool:
     """Parse arguments, extract filename and run the script.
 
-    .. versionadded:: 7.0
+    .. version-added:: 7.0
        renamed from :func:`main`
     """
     global filename
@@ -533,7 +543,7 @@ def execute() -> bool:
 def main() -> None:
     """Script entry point. Print doc if necessary.
 
-    .. versionchanged:: 7.0
+    .. version-changed:: 7.0
        previous implementation was renamed to :func:`execute`
     """
     if not check_modules():
@@ -546,10 +556,11 @@ def main() -> None:
 def run() -> None:  # pragma: no cover
     """Site package entry point. Print doc if necessary.
 
-    .. versionadded:: 7.0
+    .. version-added:: 7.0
     """
     global site_package
     site_package = True
+
     if not execute():
         print(__doc__)
 

@@ -1,3 +1,8 @@
+#
+# (C) Pywikibot team, 2008-2026
+#
+# Distributed under the terms of the MIT license.
+#
 """Mechanisms to regulate the read and write rate to wiki servers.
 
 This module defines the :class:`Throttle` class, which ensures that
@@ -9,24 +14,19 @@ shared control file ``throttle.ctrl``.
 It supports both read and write throttling, automatic adjustment based
 on the number of concurrent bot instances, and optional lag-aware delays.
 """
-#
-# (C) Pywikibot team, 2008-2025
-#
-# Distributed under the terms of the MIT license.
-#
 from __future__ import annotations
 
+import hashlib
 import itertools
 import threading
 import time
 from collections import Counter
 from contextlib import suppress
-from hashlib import blake2b
+from platform import python_implementation
 from typing import NamedTuple
 
 import pywikibot
 from pywikibot import config
-from pywikibot.backports import Counter as CounterType
 from pywikibot.tools import deprecated, deprecated_args, deprecated_signature
 
 
@@ -90,9 +90,12 @@ class Throttle:
         self.last_write = 0.0
 
         self.retry_after = 0  # set by http.request
-        self.delay = 0
+
+        #: the minimum access delay, usually set by config.minthrottle
+        self.delay: int = 0
+
         self.checktime = 0.0
-        self.modules: CounterType[str] = Counter()
+        self.modules: Counter[str] = Counter()
 
         self.checkMultiplicity()
         self.set_delays()
@@ -102,7 +105,7 @@ class Throttle:
     def next_multiplicity(self) -> float:
         """Factor to scale delay time based on upcoming request size.
 
-        .. deprecated:: 10.3.0
+        .. version-deprecated:: 10.3.0
         """
         return 1.0
 
@@ -111,38 +114,30 @@ class Throttle:
     def next_multiplicity(self, value: float) -> None:
         """Setter for delay scaling factor for the next request.
 
-        .. deprecated:: 10.3.0
+        .. version-deprecated:: 10.3.0
            This property has no effect and is retained for backward
            compatibility.
         """
 
-    @property
-    @deprecated('expiry', since='8.4.0')
-    def dropdelay(self):
-        """Ignore processes that have not made a check in this many seconds.
-
-        .. deprecated:: 8.4
-           use *expiry* instead.
-        """
-        return self.expiry
-
-    @property
-    @deprecated('expiry', since='8.4.0')
-    def releasepid(self):
-        """Free the process id after this many seconds.
-
-        .. deprecated:: 8.4
-           use *expiry* instead.
-        """
-        return self.expiry
-
     @staticmethod
-    def _module_hash(module=None) -> str:
-        """Convert called module name to a hash."""
+    def _module_hash(module: str | None = None) -> str:
+        """Convert called module name to a hash.
+
+        .. version-changed:: 11.0
+           Set hashlib constructor *usedforsecurity* argument to ``False``
+           because the hash is not used in a security context. Use ``md5``
+           hash algorithm for GraalPy implementation instead of
+           ``blake2b``.
+        """
         if module is None:
             module = pywikibot.calledModuleName()
         module = module.encode()
-        hashobj = blake2b(module, digest_size=2)
+
+        if python_implementation() == 'GraalVM':
+            hashobj = hashlib.md5(module, usedforsecurity=False)
+            return hashobj.hexdigest()[:4]
+
+        hashobj = hashlib.blake2b(module, digest_size=2, usedforsecurity=False)
         return hashobj.hexdigest()
 
     def _read_file(self, raise_exc: bool = False):
@@ -183,7 +178,7 @@ class Throttle:
     def checkMultiplicity(self) -> None:
         """Count running processes for site and set process_multiplicity.
 
-        .. versionchanged:: 7.0
+        .. version-changed:: 7.0
            process is not written to throttle.ctrl file if site is empty.
         """
         global pid
@@ -235,7 +230,7 @@ class Throttle:
     ) -> None:
         """Set the nominal delays in seconds.
 
-        .. deprecated:: 10.3.0
+        .. version-deprecated:: 10.3.0
            Use :meth:`set_delays` instead.
         """
         self.set_delays(delay=delay, writedelay=writedelay, absolute=absolute)
@@ -250,7 +245,7 @@ class Throttle:
 
         Defaults to config values.
 
-        .. versionadded:: 10.3.0
+        .. version-added:: 10.3.0
            Renamed from :meth:`setDelays`.
         """
         with self.lock:
@@ -269,7 +264,7 @@ class Throttle:
     def getDelay(self, write: bool = False) -> float:
         """Return the current delay, adjusted for active processes.
 
-        .. deprecated:: 10.3.0
+        .. version-deprecated:: 10.3.0
            Use :meth:`get_delay` instead.
         """
         return self.get_delay(write=write)
@@ -277,29 +272,40 @@ class Throttle:
     def get_delay(self, *, write: bool = False) -> float:
         """Return the current delay, adjusted for active processes.
 
-        Compute the delay for a read or write operation, factoring in
-        process concurrency. This method does not account for how much
-        time has already passed since the last access — use
+        Computes the delay for a read or write operation, taking into
+        account process concurrency and any pending retry-after value.
+        The returned value already includes the
+        :attr:`process_multiplicity` factor. This method does not
+        consider how much time has passed since the last access — use
         :meth:`waittime` for that.
 
-        .. versionadded:: 10.3.0
+        .. version-added:: 10.3.0
            Renamed from :meth:`getDelay`.
+        .. version-changed:: 11.0
+           The delay now takes any pending :attr:`retry_after` into
+           account.
 
         :param write: Whether the operation is a write (uses writedelay).
         :return: The delay in seconds before the next operation should
             occur.
         """
-        current_delay = self.writedelay if write else self.delay
-
         # Refresh process count if the check interval has elapsed
         if time.time() > self.checktime + self.checkdelay:
             self.checkMultiplicity()
 
-        current_delay = max(self.mindelay, min(current_delay, self.maxdelay))
+        current_delay = max(
+            self.mindelay,
+            self.retry_after,
+            min(self.writedelay if write else self.delay, self.maxdelay)
+        )
+
         return current_delay * self.process_multiplicity
 
     def waittime(self, write: bool = False):
         """Return waiting time in seconds.
+
+        .. version-changed:: 11.0
+           Use the latest request timestamp for read operation.
 
         The result is for a query that would be made right now.
         """
@@ -307,7 +313,13 @@ class Throttle:
         # delay this time
         thisdelay = self.get_delay(write=write)
         now = time.time()
-        ago = now - (self.last_write if write else self.last_read)
+
+        if write:
+            last = self.last_write
+        else:
+            last = max(self.last_read, self.last_write)
+
+        ago = now - last
         return max(0.0, thisdelay - ago)
 
     def drop(self) -> None:
@@ -350,10 +362,10 @@ class Throttle:
         This method blocks the calling thread if the minimum delay has
         not yet elapsed since the last read or write operation.
 
-        .. versionchanged:: 10.3.0
+        .. version-changed:: 10.3.0
            The *write* parameter is now keyword-only.
 
-        .. deprecated:: 10.3.0
+        .. version-deprecated:: 10.3.0
            The *requestsize* parameter has no effect and will be removed
            in a future release.
 

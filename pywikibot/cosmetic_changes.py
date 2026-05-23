@@ -1,8 +1,13 @@
+#
+# (C) Pywikibot team, 2006-2026
+#
+# Distributed under the terms of the MIT license.
+#
 """This module can do slight modifications to tidy a wiki page's source code.
 
 The changes are not supposed to change the look of the rendered wiki page.
 
-If you wish to run this as an stand-alone script, use::
+If you wish to run this as a stand-alone script, use::
 
     scripts/cosmetic_changes.py
 
@@ -10,10 +15,10 @@ For regular use, it is recommended to put this line into your user config::
 
     cosmetic_changes = True
 
-You may enable cosmetic changes for additional languages by adding the
-dictionary cosmetic_changes_enable to your user-config.py. It should contain
-a tuple of languages for each site where you wish to enable in addition to
-your own langlanguage if cosmetic_changes_mylang_only is True (see below).
+You may enable cosmetic changes for additional site codes by adding the
+dictionary ``cosmetic_changes_enable`` to your user-config.py. It should
+contain a tuple of codes for each site where you wish to enable in addition to
+your own site code if ``cosmetic_changes_mylang_only`` is True (see below).
 Please set your dictionary by adding such lines to your user config::
 
     cosmetic_changes_enable['wikipedia'] = ('de', 'en', 'fr')
@@ -25,8 +30,8 @@ There is another config variable: You can set::
 if you're running a bot on multiple sites and want to do cosmetic changes on
 all of them, but be careful if you do.
 
-You may disable cosmetic changes by adding the all unwanted languages to
-the `dictionary cosmetic_changes_disable` in your user config file
+You may disable cosmetic changes by adding all unwanted languages to
+the dictionary ``cosmetic_changes_disable`` in your user config file
 (`user-config.py`). It should contain a tuple of languages for each site
 where you wish to disable cosmetic changes. You may use it with
 `cosmetic_changes_mylang_only` is False, but you can also disable your
@@ -36,8 +41,8 @@ lines to your user config file::
 
     cosmetic_changes_disable['wikipedia'] = ('de', 'en', 'fr')
 
-You may disable cosmetic changes for a given script by appending the all
-unwanted scripts to the list cosmetic_changes_deny_script in your
+You may disable cosmetic changes for a given script by appending all
+unwanted scripts to the list ``cosmetic_changes_deny_script`` in your
 user-config.py. By default it contains cosmetic_changes.py itself and touch.py.
 This overrides all other enabling settings for cosmetic changes. Please modify
 the given list by adding such lines to your user-config.py::
@@ -49,14 +54,10 @@ or by adding a list to the given one::
     cosmetic_changes_deny_script += ['your_script_name_1',
                                      'your_script_name_2']
 """
-#
-# (C) Pywikibot team, 2006-2025
-#
-# Distributed under the terms of the MIT license.
-#
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 from contextlib import suppress
 from enum import IntEnum
 from typing import Any, cast
@@ -64,7 +65,6 @@ from urllib.parse import urlparse, urlunparse
 
 import pywikibot
 from pywikibot import exceptions, i18n, textlib
-from pywikibot.backports import Callable, Match, Pattern
 from pywikibot.site import Namespace
 from pywikibot.tools import first_lower, first_upper
 from pywikibot.tools.chars import url2string
@@ -179,7 +179,7 @@ used like a pipe link but sorts the page in front of the alphabetical
 order. This dict is used in
 :meth:`CosmeticChangesToolkit.standardizePageFooter`.
 
-.. versionadded:: 9.3
+.. version-added:: 9.3
 """
 
 
@@ -190,7 +190,7 @@ class CANCEL(IntEnum):
     If an error occurred and either skips the page or the method
     or a single match. ALL raises the exception.
 
-    .. versionadded:: 6.3
+    .. version-added:: 6.3
     """
 
     ALL = 0
@@ -199,7 +199,7 @@ class CANCEL(IntEnum):
     MATCH = 3
 
 
-def _format_isbn_match(match: Match[str], *, strict: bool = True) -> str:
+def _format_isbn_match(match: re.Match[str], *, strict: bool = True) -> str:
     """Helper function to validate and format a single matched ISBN."""
     if not stdnum_isbn:
         raise NotImplementedError(
@@ -230,7 +230,7 @@ class CosmeticChangesToolkit:
 
     """Cosmetic changes toolkit.
 
-    .. versionchanged:: 7.0
+    .. version-changed:: 7.0
        `from_page()` method was removed
     """
 
@@ -239,17 +239,17 @@ class CosmeticChangesToolkit:
                  ignore: IntEnum = CANCEL.ALL) -> None:
         """Initializer.
 
-        .. versionchanged:: 5.2
+        .. version-changed:: 5.2
            instantiate the CosmeticChangesToolkit from a page object;
            only allow keyword arguments except for page parameter;
            `namespace` and `pageTitle` parameters are deprecated
 
-        .. versionchanged:: 7.0
+        .. version-changed:: 7.0
            `namespace` and `pageTitle` parameters were removed
 
-        :param page: the Page object containing the text to be modified
-        :param show_diff: show difference after replacements
-        :param ignore: ignores if an error occurred and either skips the page
+        :param page: The Page object containing the text to be modified
+        :param show_diff: Show difference after replacements
+        :param ignore: Ignores if an error occurred and either skips the page
             or only that method. It can be set one of the CANCEL constants
         """
         self.site = page.site
@@ -349,14 +349,14 @@ class CosmeticChangesToolkit:
         2. additional information depending on the local site policy
         3. interwiki
 
-        .. versionchanged:: 9.3
+        .. version-changed:: 9.3
            uses :attr:`main_sortkey` to determine the sort key for the
            main article within a category. If the main article has a
            sort key already, it will not be changed any longer.
 
-        :param text: text to be modified
-        :return: the modified *text*
-        :raises ValueError: wrong value of sortkey in
+        :param text: Text to be modified
+        :return: The modified *text*
+        :raises ValueError: Wrong value of sortkey in
             :attr:`main_sortkey` for the given site
         """
         categories = []
@@ -415,7 +415,7 @@ class CosmeticChangesToolkit:
     def translateAndCapitalizeNamespaces(self, text: str) -> str:
         """Use localized namespace names.
 
-        .. versionchanged:: 7.4
+        .. version-changed:: 7.4
            No longer expect a specific namespace alias for File:
         """
         # arz uses English stylish codes
@@ -501,7 +501,7 @@ class CosmeticChangesToolkit:
             if not cache:
                 cache[False] = True  # signal there is nothing to replace
 
-        def replace_magicword(match: Match[str]) -> str:
+        def replace_magicword(match: re.Match[str]) -> str:
             """Replace magic words in file link params, leaving captions."""
             linktext = match.group()
             if cache.get(False):
@@ -522,7 +522,7 @@ class CosmeticChangesToolkit:
             replaced = '|'.join(cache.get(p.strip(), p) for p in parts)
 
             # extract namespace
-            m = cast(Match[str],
+            m = cast(re.Match[str],
                      re.match(r'\[\[\s*(?P<namespace>[^:]+)\s*:', linktext))
 
             return f'[[{m["namespace"]}:{match["filename"]}{replaced}]]'
@@ -546,19 +546,27 @@ class CosmeticChangesToolkit:
           without using a pipe, if possible
         * Capitalize the article title of the link, if appropriate
 
-        .. versionchanged:: 8.4
+        .. version-changed:: 8.4
            Convert URL-encoded characters if a link is an interwiki link
            or different from main namespace.
+        .. version-changed:: 11.3
+           UnicodeDecodeError is now ignored when encoding a links, and
+           link cleanup is skipped in such case.
 
-        :param text: string to perform the clean-up on
-        :return: text with tidied wikilinks
+        :param text: String to perform the clean-up on
+        :return: Text with tidied wikilinks
         """
         # helper function which works on one link and either returns it
         # unmodified, or returns a replacement.
-        def handleOneLink(match: Match[str]) -> str:
+        def handleOneLink(match: re.Match[str]) -> str:
             # Convert URL-encoded characters to str
-            titleWithSection = url2string(match['titleWithSection'],
-                                          encodings=self.site.encodings())
+            try:
+                titleWithSection = url2string(match['titleWithSection'],
+                                              encodings=self.site.encodings())
+            except UnicodeDecodeError:
+                # Ignore broken links
+                return match.group()
+
             label = match['label']
             trailingChars = match['linktrail']
             newline = match['newline'] or ''
@@ -684,7 +692,7 @@ class CosmeticChangesToolkit:
         """Replace HTML entities with string."""
         ignore = [
             38,     # Ampersand (&amp;)
-            39,     # Single quotation mark (&quot;) per T26093
+            39,     # Single quotation mark (&apos;) per T26093
             60,     # Less than (&lt;)
             62,     # Greater than (&gt;)
             91,     # Opening square bracket ([)
@@ -841,7 +849,7 @@ class CosmeticChangesToolkit:
     # from fixes.py
     def fixSyntaxSave(self, text: str) -> str:
         """Convert weblinks to wikilink, fix link syntax."""
-        def replace_link(match: Match[str]) -> str:
+        def replace_link(match: re.Match[str]) -> str:
             """Create a string to replace a single link."""
             replacement = '[['
             if re.match(
@@ -927,7 +935,7 @@ class CosmeticChangesToolkit:
 
     def fixHtml(self, text: str) -> str:
         """Replace html markups with wikitext markups."""
-        def replace_header(match: Match[str]) -> str:
+        def replace_header(match: re.Match[str]) -> str:
             """Create a header string for replacing."""
             depth = int(match[1])
             return r'{0} {1} {0}'.format('=' * depth, match[2])
@@ -987,7 +995,7 @@ class CosmeticChangesToolkit:
 
     def fixTypo(self, text: str) -> str:
         """Fix units."""
-        exceptions: list[str | Pattern[str]] = [
+        exceptions: list[str | re.Pattern[str]] = [
             'comment',
             'gallery',
             'hyperlink',
@@ -1021,7 +1029,7 @@ class CosmeticChangesToolkit:
         if self.site.code not in ['ckb', 'fa']:
             return text
 
-        exceptions: list[str | Pattern[str]] = [
+        exceptions: list[str | re.Pattern[str]] = [
             'file',
             'gallery',
             'hyperlink',
@@ -1070,8 +1078,8 @@ class CosmeticChangesToolkit:
         [1]:
         https://commons.wikimedia.org/wiki/Commons:Tools/pywiki_file_description_cleanup
         """
-        if (self.site.sitename != 'commons:commons'
-                or self.namespace == Namespace.FILE):
+        if (self.site.family.name != 'commons'
+                or self.namespace != Namespace.FILE):
             return text
 
         # section headers to {{int:}} versions

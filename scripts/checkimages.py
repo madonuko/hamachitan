@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+#
+# (C) Pywikibot team, 2006-2026
+#
+# Distributed under the terms of the MIT license.
+#
 """Script to check recently uploaded files.
 
 This script checks if a file description is present and if there are
@@ -71,25 +76,20 @@ take the right parameter:
     Text=     This is the template that the bot will use when it will
               report the image's problem.
 
-.. versionchanged:: 8.4
+.. version-changed:: 8.4
    Welcome messages are imported from :mod:`scripts.welcome` script.
 """
-#
-# (C) Pywikibot team, 2006-2025
-#
-# Distributed under the terms of the MIT license.
-#
 from __future__ import annotations
 
 import collections
 import re
 import time
+from collections.abc import Generator
 from itertools import zip_longest
 
 import pywikibot
 from pywikibot import config, i18n
 from pywikibot import pagegenerators as pg
-from pywikibot.backports import Generator
 from pywikibot.bot import suggest_help
 from pywikibot.exceptions import (
     EditConflictError,
@@ -410,7 +410,7 @@ DUPLICATES_REGEX = {
 CATEGORIES_WITH_LICENSES = 'Q4481876', 'Q7451504'
 """Category items with the licenses; subcategories may contain other licenses.
 
-.. versionchanged:: 7.2
+.. version-changed:: 7.2
    uses wikibase items instead of category titles.
 """
 
@@ -696,7 +696,7 @@ class CheckImagesBot:
 
         if curr_text is None:
             try:
-                curr_text = get_welcome_text(self.site) % '~~~~'
+                curr_text = get_welcome_text(self.site)
             except KeyError:
                 curr_text = ''
 
@@ -782,7 +782,7 @@ class CheckImagesBot:
     ) -> pywikibot.FilePage:
         """Get tuples of image and time, return the most used or oldest image.
 
-        .. versionchanged:: 7.2
+        .. version-changed:: 7.2
            itertools.zip_longest is used to stop `using_pages` as soon as
            possible.
 
@@ -1105,7 +1105,7 @@ class CheckImagesBot:
     def load_licenses(self) -> set[pywikibot.Page]:
         """Load the list of the licenses.
 
-        .. versionchanged:: 7.2
+        .. version-changed:: 7.2
            return a set instead of a list for quicker lookup.
         """
         pywikibot.info('\nLoading the allowed licenses...\n')

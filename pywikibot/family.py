@@ -1,9 +1,9 @@
-"""Objects representing MediaWiki families."""
 #
-# (C) Pywikibot team, 2004-2025
+# (C) Pywikibot team, 2004-2026
 #
 # Distributed under the terms of the MIT license.
 #
+"""Objects representing MediaWiki families."""
 from __future__ import annotations
 
 import collections
@@ -14,6 +14,7 @@ import sys
 import types
 import urllib.parse as urlparse
 import warnings
+from collections.abc import Mapping, Sequence
 from importlib import import_module
 from itertools import chain
 from os.path import basename, dirname, splitext
@@ -22,7 +23,6 @@ from typing import TYPE_CHECKING, NoReturn
 
 import pywikibot
 from pywikibot import config
-from pywikibot.backports import DefaultDict, Mapping, Sequence, removesuffix
 from pywikibot.data import wikistats
 from pywikibot.exceptions import FamilyMaintenanceWarning, UnknownFamilyError
 from pywikibot.tools import classproperty, deprecated
@@ -31,11 +31,11 @@ from pywikibot.tools import classproperty, deprecated
 logger = logging.getLogger('pywiki.wiki.family')
 
 if TYPE_CHECKING:
-    CrossnamespaceType = DefaultDict[str, dict[str, list[int]]]
+    CrossnamespaceType = collections.defaultdict[str, dict[str, list[int]]]
 
 # Legal characters for Family.name and Family.langs keys
 NAME_CHARACTERS = string.ascii_letters + string.digits
-# nds_nl code alias requires "_"n
+# nds_nl code alias requires "_"
 # dash must be the last char to be reused as regex
 CODE_CHARACTERS = string.ascii_lowercase + string.digits + '_-'
 
@@ -47,17 +47,17 @@ class Family:
     Families are immutable and initializer is unsupported. Any class
     modification should go to :meth:`__post_init__` class method.
 
-    .. versionchanged:: 3.0
+    .. version-changed:: 3.0
        the family class is immutable. Having an ``__init__`` initializer
        method a ``NotImplementedWarning`` will be given.
-    .. versionchanged:: 8.0
+    .. version-changed:: 8.0
        ``alphabetic``, ``alphabetic_revised`` and ``fyinterwiki``
        attributes where removed.
-    .. versionchanged:: 8.2
+    .. version-changed:: 8.2
        :attr:`obsolete` setter was removed.
-    .. versionchanged:: 8.3
+    .. version-changed:: 8.3
        Having an initializer method a ``FutureWarning`` will be given.
-    .. versionchanged:: 9.0
+    .. version-changed:: 9.0
        raises RuntimeError if an initializer method was found;
        :meth:`__post_init__` classmethod should be used instead.
     """
@@ -87,7 +87,7 @@ class Family:
         else:
             raise RuntimeError(fill(
                 f'__post_init__() method of {cls.__module__}.{cls.__name__}'
-                ' class or its superclass must be a classmethod. Please  check'
+                ' class or its superclass must be a classmethod. Please check'
                 ' your family file.', width=66))
 
         return cls.instance
@@ -193,11 +193,9 @@ class Family:
     """
 
     interwiki_forward: str | None = None
-    """Some families, e.
-
-    g. commons and meta, are not multilingual and forward interlanguage
-    links to another family (wikipedia). These families can set this
-    variable to the name of the target family.
+    """Some families, e.g. commons and meta, are not multilingual and
+    forward interlanguage links to another family (wikipedia). These
+    families can set this variable to the name of the target family.
     """
 
     #: Some languages belong to a group where the possibility is high
@@ -316,7 +314,7 @@ class Family:
     .. warning:: This attribute is used within ``re.sub()`` method. Use
        escape sequence if necessary
 
-    .. versionadded:: 7.0
+    .. version-added:: 7.0
     """
 
     _families: dict[str, Family] = {}
@@ -326,7 +324,7 @@ class Family:
     def categories_last(cls) -> list[str]:
         """Categories come after interwiki links for the given site codes.
 
-        .. deprecated:: 10.3
+        .. version-deprecated:: 10.3
            use :meth:`site.has_extension('CategorySelect')
            <pywikibot.site._apisite.APISite.has_extension>` instead
         """
@@ -336,9 +334,9 @@ class Family:
     def load(fam: str | None = None):
         """Import the named family.
 
-        :param fam: family name (if omitted, uses the configured
+        :param fam: Family name (if omitted, uses the configured
             default)
-        :return: a Family instance configured for the named family.
+        :return: A Family instance configured for the named family.
         :raises pywikibot.exceptions.UnknownFamilyError: family not
             known
         """
@@ -430,21 +428,21 @@ class Family:
     def get_edit_restricted_templates(self, code):
         """Return tuple of edit restricted templates.
 
-        .. versionadded:: 3.0
+        .. version-added:: 3.0
         """
         return self.edit_restricted_templates.get(code, ())
 
     def get_archived_page_templates(self, code):
         """Return tuple of archived page templates.
 
-        .. versionadded:: 3.0
+        .. version-added:: 3.0
         """
         return self.archived_page_templates.get(code, ())
 
     def disambig(self, code, fallback: str | None = '_default') -> list[str]:
         """Return list of disambiguation templates.
 
-        :raises KeyError: unknown title for disambig template
+        :raises KeyError: Unknown title for disambig template
         """
         if code in self.disambiguationTemplates:
             return self.disambiguationTemplates[code]
@@ -461,22 +459,22 @@ class Family:
         May be overridden to return 'http'. Other protocols are not
         supported.
 
-        .. versionchanged:: 8.2
+        .. version-changed:: 8.2
            ``https`` is returned instead of ``http``.
 
-        :param code: language code
-        :return: protocol that this family uses
+        :param code: Language code
+        :return: Protocol that this family uses
         """
         return 'https'
 
     def verify_SSL_certificate(self, code: str) -> bool:
         """Return whether a HTTPS certificate should be verified.
 
-        .. versionadded:: 5.3
+        .. version-added:: 5.3
            renamed from ignore_certificate_error
 
-        :param code: language code
-        :return: flag to verify the SSL certificate;
+        :param code: Language code
+        :return: Flag to verify the SSL certificate;
                  set it to False to allow access if certificate has an error.
         """
         return True
@@ -501,7 +499,7 @@ class Family:
         uses a different value.
 
         :param code: Site code
-        :raises KeyError: code is not recognised
+        :raises KeyError: Code is not recognised
         :return: URL path without ending '/'
         """
         return '/w'
@@ -550,14 +548,14 @@ class Family:
     def eventstreams_host(self, code) -> NoReturn:
         """Hostname for EventStreams.
 
-        .. versionadded:: 3.0
+        .. version-added:: 3.0
         """
         raise NotImplementedError('This family does not support EventStreams')
 
     def eventstreams_path(self, code) -> NoReturn:
         """Return path for EventStreams.
 
-        .. versionadded:: 3.0
+        .. version-added:: 3.0
         """
         raise NotImplementedError('This family does not support EventStreams')
 
@@ -592,13 +590,13 @@ class Family:
         applies and then iterates over :attr:`Family.codes` to actually
         determine which code applies.
 
-        .. versionchanged:: 10.0
+        .. version-changed:: 10.0
            *url* parameter does not have to contain a api/query/script
            path
-        .. versionchanged:: 10.3
+        .. version-changed:: 10.3
            accept a trailing slash in *url* after domain.
 
-        :param url: the URL which may contain a ``$1``. If it's missing
+        :param url: The URL which may contain a ``$1``. If it's missing
             it is assumed to be at the end.
         :return: The language code of the URL. None if that URL is not
             from his family.
@@ -652,15 +650,6 @@ class Family:
             'Found multiple matches for URL "{}": {}'
             .format(url, ', '.join(str(s) for s in matched_sites)))
 
-    @deprecated('config.maximum_GET_length', since='8.0.0')
-    def maximum_GET_length(self, code):
-        """Return the maximum URL length for GET instead of POST.
-
-        .. deprecated:: 8.0
-           Use :ref:`config.maximum_GET_length<Account Settings>` instead.
-        """
-        return config.maximum_GET_length
-
     def dbName(self, code) -> str:
         """Return the name of the MySQL database."""
         return f'{code}{self.name}'
@@ -707,7 +696,7 @@ class Family:
     def isPublic(self, code) -> bool:
         """Check the wiki require logging in before viewing it.
 
-        .. deprecated:: 10.6
+        .. version-deprecated:: 10.6
         """
         return True
 
@@ -733,7 +722,7 @@ class Family:
 
         Interwiki replacements override removals for the same code.
 
-        :return: mapping of old codes to new codes (or None)
+        :return: Mapping of old codes to new codes (or None)
         """
         data = dict.fromkeys(self.interwiki_removals)
         data.update(self.code_aliases)
@@ -762,9 +751,9 @@ class Family:
         xx: now should get code yy:, add {'xx':'yy'} to
         :attr:`code_aliases`.
 
-        .. deprecated:: 10.6
+        .. version-deprecated:: 10.6
            Use :attr:`code_aliases` directly instead.
-        .. versionchanged:: 8.2
+        .. version-changed:: 8.2
            changed from dict to invariant mapping.
         """
         return types.MappingProxyType(cls.code_aliases)
@@ -776,7 +765,7 @@ class Family:
         Codes that should be removed, usually because the site has been
         taken down.
 
-        .. versionchanged:: 8.2
+        .. version-changed:: 8.2
            changed from list to invariant frozenset.
         """
         return frozenset(cls.removed_wikis + cls.closed_wikis)
@@ -843,7 +832,7 @@ class FandomFamily(Family):
 
     """Common features of Fandom families.
 
-    .. versionadded:: 3.0
+    .. version-added:: 3.0
        renamed from WikiaFamily
     """
 
@@ -866,7 +855,7 @@ class WikimediaFamily(Family):
 
     """Class for all wikimedia families.
 
-    .. versionchanged:: 8.0
+    .. version-changed:: 8.0
        :attr:`knows_codes` attribute was added.
     """
 
@@ -902,6 +891,7 @@ class WikimediaFamily(Family):
         'mediawiki',
         'wikidata',
         'wikifunctions',
+        'abstract',
     ]
 
     content_families = set(
@@ -927,37 +917,41 @@ class WikimediaFamily(Family):
     # Known Wikimedia site codes
     known_codes = [
         'aa', 'ab', 'ace', 'ady', 'af', 'ak', 'als', 'alt', 'am', 'ami', 'an',
-        'ang', 'ar', 'arc', 'ary', 'arz', 'as', 'ast', 'atj', 'av', 'avk',
-        'awa', 'ay', 'az', 'azb', 'ba', 'ban', 'bar', 'bat-smg', 'bcl', 'be',
-        'be-tarask', 'bg', 'bh', 'bi', 'bjn', 'blk', 'bm', 'bn', 'bo', 'bpy',
-        'br', 'bs', 'bug', 'bxr', 'ca', 'cbk-zam', 'cdo', 'ce', 'ceb', 'ch',
-        'cho', 'chr', 'chy', 'ckb', 'co', 'cr', 'crh', 'cs', 'csb', 'cu', 'cv',
-        'cy', 'da', 'dag', 'de', 'din', 'diq', 'dk', 'dsb', 'dty', 'dv', 'dz',
-        'ee', 'el', 'eml', 'en', 'eo', 'es', 'et', 'eu', 'ext', 'fa', 'ff',
-        'fi', 'fiu-vro', 'fj', 'fo', 'fr', 'frp', 'frr', 'fur', 'fy', 'ga',
+        'ang', 'ann', 'anp', 'ar', 'arc', 'ary', 'arz', 'as', 'ast', 'atj',
+        'av', 'avk', 'awa', 'ay', 'az', 'azb', 'ba', 'ban', 'bar', 'bat-smg',
+        'bbc', 'bcl', 'bdr', 'be', 'be-tarask', 'bew', 'bg', 'bh', 'bi', 'bjn',
+        'blk', 'bm', 'bn', 'bo', 'bpy', 'br', 'bs', 'btm', 'bug', 'bxr', 'ca',
+        'cbk-zam', 'cdo', 'ce', 'ceb', 'ch', 'cho', 'chr', 'chy', 'ckb', 'co',
+        'cr', 'crh', 'cs', 'csb', 'cu', 'cv', 'cy', 'da', 'dag', 'de', 'dga',
+        'din', 'diq', 'dk', 'dsb', 'dtp', 'dty', 'dv', 'dz', 'ee', 'el', 'eml',
+        'en', 'eo', 'es', 'et', 'eu', 'ext', 'fa', 'fat', 'ff', 'fi',
+        'fiu-vro', 'fj', 'fo', 'fon', 'fr', 'frp', 'frr', 'fur', 'fy', 'ga',
         'gag', 'gan', 'gcr', 'gd', 'gl', 'glk', 'gn', 'gom', 'gor', 'got',
-        'gu', 'guw', 'gv', 'ha', 'hak', 'haw', 'he', 'hi', 'hif', 'ho', 'hr',
-        'hsb', 'ht', 'hu', 'hy', 'hyw', 'hz', 'ia', 'id', 'ie', 'ig', 'ii',
-        'ik', 'ilo', 'inh', 'io', 'is', 'it', 'iu', 'ja', 'jam', 'jbo', 'jv',
-        'ka', 'kaa', 'kab', 'kbd', 'kbp', 'kcg', 'kg', 'ki', 'kj', 'kk', 'kl',
-        'km', 'kn', 'ko', 'koi', 'kr', 'krc', 'ks', 'ksh', 'ku', 'kv', 'kw',
+        'gpe', 'gu', 'guc', 'gur', 'guw', 'gv', 'ha', 'hak', 'haw', 'he', 'hi',
+        'hif', 'ho', 'hr', 'hsb', 'ht', 'hu', 'hy', 'hyw', 'hz', 'ia', 'iba',
+        'id', 'ie', 'ig', 'igl', 'ii', 'ik', 'ilo', 'inh', 'io', 'is', 'it',
+        'iu', 'ja', 'jam', 'jbo', 'jv', 'ka', 'kaa', 'kab', 'kai', 'kaj',
+        'kbd', 'kbp', 'kcg', 'kg', 'kge', 'ki', 'kj', 'kk', 'kl', 'km', 'kn',
+        'knc', 'ko', 'koi', 'kr', 'krc', 'ks', 'ksh', 'ku', 'kus', 'kv', 'kw',
         'ky', 'la', 'lad', 'lb', 'lbe', 'lez', 'lfn', 'lg', 'li', 'lij', 'lld',
         'lmo', 'ln', 'lo', 'lrc', 'lt', 'ltg', 'lv', 'mad', 'mai', 'map-bms',
         'mdf', 'mg', 'mh', 'mhr', 'mi', 'min', 'mk', 'ml', 'mn', 'mni', 'mnw',
-        'mo', 'mr', 'mrj', 'ms', 'mt', 'mus', 'mwl', 'my', 'myv', 'mzn', 'na',
-        'nah', 'nan', 'nap', 'nb', 'nds', 'nds-nl', 'ne', 'new', 'ng', 'nia',
-        'nl', 'nn', 'no', 'nov', 'nqo', 'nrm', 'nso', 'nv', 'ny', 'oc', 'olo',
-        'om', 'or', 'os', 'pa', 'pag', 'pam', 'pap', 'pcd', 'pcm', 'pdc',
-        'pfl', 'pi', 'pih', 'pl', 'pms', 'pnb', 'pnt', 'ps', 'pt', 'pwn', 'qu',
-        'rm', 'rmy', 'rn', 'ro', 'roa-rup', 'roa-tara', 'ru', 'rue', 'rw',
-        'sa', 'sah', 'sat', 'sc', 'scn', 'sco', 'sd', 'se', 'sg', 'sh', 'shi',
-        'shn', 'si', 'simple', 'sk', 'skr', 'sl', 'sm', 'smn', 'sn', 'so',
-        'sq', 'sr', 'srn', 'ss', 'st', 'stq', 'su', 'sv', 'sw', 'szl', 'szy',
-        'ta', 'tay', 'tcy', 'te', 'tet', 'tg', 'th', 'ti', 'tk', 'tl', 'tn',
-        'to', 'tpi', 'tr', 'trv', 'ts', 'tt', 'tum', 'tw', 'ty', 'tyv', 'udm',
-        'ug', 'uk', 'ur', 'uz', 've', 'vec', 'vep', 'vi', 'vls', 'vo', 'wa',
-        'war', 'wo', 'wuu', 'xal', 'xh', 'xmf', 'yi', 'yo', 'za', 'zea', 'zh',
-        'zh-classical', 'zh-cn', 'zh-min-nan', 'zh-tw', 'zh-yue', 'zu',
+        'mo', 'mos', 'mr', 'mrj', 'ms', 'mt', 'mus', 'mwl', 'my', 'myv', 'mzn',
+        'na', 'nah', 'nan', 'nap', 'nb', 'nds', 'nds-nl', 'ne', 'new', 'ng',
+        'nia', 'nl', 'nn', 'no', 'nov', 'nqo', 'nr', 'nrm', 'nso', 'nup', 'nv',
+        'ny', 'oc', 'olo', 'om', 'or', 'os', 'pa', 'pag', 'pam', 'pap', 'pcd',
+        'pcm', 'pdc', 'pfl', 'pi', 'pih', 'pl', 'pms', 'pnb', 'pnt', 'ppl',
+        'ps', 'pt', 'pwn', 'qu', 'rki', 'rm', 'rmy', 'rn', 'ro', 'roa-rup',
+        'roa-tara', 'rsk', 'ru', 'rue', 'rw', 'sa', 'sah', 'sat', 'sc', 'scn',
+        'sco', 'sd', 'se', 'sg', 'sh', 'shi', 'shn', 'shy', 'si', 'simple',
+        'sk', 'skr', 'sl', 'sm', 'smn', 'sn', 'so', 'sq', 'sr', 'srn', 'ss',
+        'st', 'stq', 'su', 'sv', 'sw', 'syl', 'szl', 'szy', 'ta', 'tay', 'tcy',
+        'tdd', 'te', 'tet', 'tg', 'th', 'ti', 'tig', 'tk', 'tl', 'tly', 'tn',
+        'to', 'tok', 'tpi', 'tr', 'trv', 'ts', 'tt', 'tum', 'tw', 'ty', 'tyv',
+        'udm', 'ug', 'uk', 'ur', 'uz', 've', 'vec', 'vep', 'vi', 'vls', 'vo',
+        'wa', 'war', 'wo', 'wuu', 'xal', 'xh', 'xmf', 'yi', 'yo', 'yue', 'za',
+        'zea', 'zgh', 'zh', 'zh-classical', 'zh-cn', 'zh-min-nan', 'zh-tw',
+        'zh-yue', 'zu',
     ]
 
     # Code mappings which are only an alias, and there is no 'old' wiki.
@@ -1032,7 +1026,7 @@ class WikimediaFamily(Family):
 
         They should be roughly sorted by size.
 
-        .. versionchanged:: 9.0
+        .. version-changed:: 9.0
            Sorting order is retrieved via :mod:`wikistats` for each call.
 
         :raises NotImplementedError: Family is not member of
@@ -1078,7 +1072,7 @@ class WikibaseFamily(Family):
 
     """A base class for a Wikibase Family.
 
-    .. versionadded:: 8.2
+    .. version-added:: 8.2
     """
 
     def interface(self, code) -> str:
@@ -1115,7 +1109,7 @@ class DefaultWikibaseFamily(WikibaseFamily):
     .. warning:: Possibly you have to adjust the repository site in
        :meth:`WikibaseFamily.entity_sources` to get the valid entity.
 
-    .. versionadded:: 8.2
+    .. version-added:: 8.2
     """
 
     @property
@@ -1195,7 +1189,7 @@ def AutoFamily(name: str, url: str) -> SingleSiteFamily:
     def scriptpath(self, code):
         """Extract the script path from the URL."""
         if self.url.path.endswith('/api.php'):
-            return removesuffix(self.url.path, '/api.php')
+            return self.url.path.removesuffix('/api.php')
 
         # AutoFamily refers to the variable set below, not the function
         # but the reference must be given here

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Tests for the proofreadpage module."""
 #
-# (C) Pywikibot team, 2015-2025
+# (C) Pywikibot team, 2015-2026
 #
 # Distributed under the terms of the MIT license.
 #
+"""Tests for the proofreadpage module."""
 from __future__ import annotations
 
 import difflib
@@ -248,16 +248,24 @@ class TestProofreadPageValidSite(TestCase):
         'user': 'T. Mazzei',
         'header': "{{rh|2|''THE POPULAR SCIENCE MONTHLY.''}}",
         'footer': '\n{{smallrefs}}',
-        'url_image': ('https://upload.wikimedia.org/wikipedia/commons/'
-                      'thumb/a/ac/Popular_Science_Monthly_Volume_1.djvu/'
-                      'page12-2012px-Popular_Science_Monthly_Volume_1.djvu'
-                      '.jpg'),
+        'url_image': (
+            'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/'
+            'Popular_Science_Monthly_Volume_1.djvu/'
+            'page12-2012px-Popular_Science_Monthly_Volume_1.djvu.jpg',
+            'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/'
+            'Popular_Science_Monthly_Volume_1.djvu/'
+            'page12-1920px-Popular_Science_Monthly_Volume_1.djvu.jpg',
+        )
     }
 
     valid_redlink = {
         'title': 'Page:Pywikibot test page 3.jpg',
-        'url_image': ('https://upload.wikimedia.org/wikisource/en/3/37/'
-                      'Pywikibot_test_page_3.jpg'),
+        'url_image': (
+            'https://upload.wikimedia.org/wikisource/en/3/37/'
+            'Pywikibot_test_page_3.jpg',
+            'https://upload.wikimedia.org/wikisource/en/thumb/3/37/'
+            'Pywikibot_test_page_3.jpg/60px-Pywikibot_test_page_3.jpg',
+        )
     }
 
     existing_invalid = {
@@ -404,15 +412,19 @@ class TestProofreadPageValidSite(TestCase):
     def test_url_image(self) -> None:
         """Test fetching of url image of the scan of ProofreadPage."""
         page = ProofreadPage(self.site, self.valid['title'])
-        self.assertEqual(page.url_image, self.valid['url_image'])
-
+        # seems the result is not deterministic
+        self.assertIn(page.url_image, self.valid['url_image'])
         page = ProofreadPage(self.site, self.existing_unlinked['title'])
         # test Exception in property.
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(
+            ValueError,
+            'imagesforpage is empty|No prp-page-image src found'
+        ):
             page.url_image
 
         page = ProofreadPage(self.site, self.valid_redlink['title'])
-        self.assertEqual(page.url_image, self.valid_redlink['url_image'])
+        # seems the result is not deterministic
+        self.assertIn(page.url_image, self.valid_redlink['url_image'])
 
 
 class TestPageQuality(TestCase):
@@ -823,11 +835,11 @@ class TestIndexPageMappings(BS4TestCase):
         proofread_page = ProofreadPage(self.site, page_title)
 
         # Check start/end limits.
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(ValueError, ' are not in valid range '):
             index_page.page_gen(-1, 2)
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(ValueError, ' are not in valid range '):
             index_page.page_gen(1, -1)
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(ValueError, ' are not in valid range '):
             index_page.page_gen(2, 1)
 
         # Check quality filters.

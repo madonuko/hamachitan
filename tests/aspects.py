@@ -1,13 +1,13 @@
+#
+# (C) Pywikibot team, 2014-2026
+#
+# Distributed under the terms of the MIT license.
+#
 """Test aspects to allow fine grained control over what tests are executed.
 
 Several parts of the test infrastructure are implemented as mixins, such
 as API result caching and excessive test durations.
 """
-#
-# (C) Pywikibot team, 2014-2025
-#
-# Distributed under the terms of the MIT license.
-#
 from __future__ import annotations
 
 import inspect
@@ -18,7 +18,7 @@ import time
 import types
 import unittest
 import warnings
-from collections.abc import Sized
+from collections.abc import Iterable, Iterator, Sized
 from contextlib import contextmanager, suppress
 from functools import wraps
 from http import HTTPStatus
@@ -27,7 +27,6 @@ from unittest.util import safe_repr
 
 import pywikibot
 from pywikibot import Site, config
-from pywikibot.backports import Iterable, Iterator, removeprefix, removesuffix
 from pywikibot.comms import http
 from pywikibot.data.api import Request as _original_Request
 from pywikibot.exceptions import (
@@ -74,7 +73,7 @@ class Python314AssertionsMixin:  # pragma: no cover
     The mixin will be removed without deprecation period once Python 3.14
     becomes the minimum requirement for Pywikibot, likely with Pywikibot 16.
 
-    .. versionadded:: 10.3
+    .. version-added:: 10.3
     """
 
     def assertStartsWith(self, s: str, prefix: str,
@@ -293,7 +292,7 @@ class TestCaseBase(*bases):
     ) -> list[pywikibot.Page]:
         """Get pages from gen, asserting they are Page from site.
 
-        .. versionchanged:: 9.3
+        .. version-changed:: 9.3
            the *count* parameter was dropped; all pages from *gen* are
            tested.
 
@@ -340,7 +339,7 @@ class TestCaseBase(*bases):
                                    skip: bool = False) -> None:
         """Try to confirm that generator returns Pages for all namespaces.
 
-        .. versionchanged:: 9.3
+        .. version-changed:: 9.3
            raises TypeError instead of AssertionError
 
         :param gen: generator to iterate
@@ -454,9 +453,9 @@ def require_version(version_needed: str, /, reason: str = ''):
     only supported for the current site — not for related sites like
     data or image repositories.
 
-    .. versionadded:: 8.0
+    .. version-added:: 8.0
 
-    .. versionchanged:: 10.0
+    .. version-changed:: 10.0
        TypeError and ValueError are used for validation fails.
        *version_needed* parameter is positional only.
 
@@ -680,7 +679,7 @@ class SiteWriteMixin(TestCaseBase):
         The test class is skipped unless environment variable
         :envvar:`PYWIKIBOT_TEST_WRITE` is set to 1.
 
-        .. versionchanged:: 9.2
+        .. version-changed:: 9.2
            :envvar:`PYWIKIBOT_TEST_WRITE_FAIL` environment variable was
            discarded, see :ref:`Environment variables`.
 
@@ -766,7 +765,7 @@ class RequireLoginMixin(TestCaseBase):
         There may be many sites, and setUp doesn't know which site is to
         be tested; ensure they are all logged in.
 
-        .. versionadded:: 7.0
+        .. version-added:: 7.0
            The `skip_if_login_fails` parameter.
 
         :param skip_if_login_fails: called with setUp(); if True, skip
@@ -833,7 +832,7 @@ class MetaTestCaseClass(type):
     def __new__(cls, name, bases, dct):
         """Create the new class.
 
-        .. versionchanged:: 9.3
+        .. version-changed:: 9.3
            raises AttributeError instead of AssertionError for
            duplicated hostname, raises Exception instead of
            AssertionError for missing or wrong "net" attribute with
@@ -859,7 +858,7 @@ class MetaTestCaseClass(type):
             # sitedata['family'] may be an AutoFamily. Use str() for its name
             sitename = str(sitedata['family']) + ':' + sitedata['code']
             if func.__doc__:
-                wrapped_method.__doc__ = removesuffix(func.__doc__, '.')
+                wrapped_method.__doc__ = func.__doc__.removesuffix('.')
                 wrapped_method.__doc__ += ' on ' + sitename
             else:
                 wrapped_method.__doc__ = 'Test ' + sitename  # pragma: no cover
@@ -1035,7 +1034,7 @@ class MetaTestCaseClass(type):
     def add_method(dct, test_name, method, doc=None, doc_suffix=None) -> None:
         """Set method's __name__ and __doc__ and add it to dct.
 
-        .. versionchanged:: 9.3
+        .. version-changed:: 9.3
            raises ValueError instead of AssertionError
 
         :raises ValueError: doc string must end with a period.
@@ -1116,7 +1115,7 @@ class TestCase(TestCaseBase, metaclass=MetaTestCaseClass):
     def get_site(cls, name=None):
         """Return the prefetched Site object.
 
-        .. versionchanged:: 9.3
+        .. version-changed:: 9.3
            raises Exception instead of AssertionError for site mismatch
 
         :raises Exception: method called for multiple sites without
@@ -1185,7 +1184,7 @@ class TestCase(TestCaseBase, metaclass=MetaTestCaseClass):
             return self._mainpage
 
         maintitle = site.siteinfo['mainpage']
-        maintitle = removeprefix(maintitle, 'Special:MyLanguage/')  # T278702
+        maintitle = maintitle.removeprefix('Special:MyLanguage/')  # T278702
         mainpage = pywikibot.Page(site, maintitle)
         if not isinstance(site, DrySite) and mainpage.isRedirectPage():
             mainpage = mainpage.getRedirectTarget()  # pragma: no cover
@@ -1339,7 +1338,7 @@ class WikimediaDefaultSiteTestCase(DefaultSiteTestCase):
         Check that the default site is a Wikimedia site.
         Use en.wikipedia.org as a fallback.
 
-        .. versionchanged:: 9.3
+        .. version-changed:: 9.3
            raises Exception instead of AssertionError
 
         :raises Exception: "site" or "sites" attribute is missing or
@@ -1499,7 +1498,7 @@ class PwbTestCase(TestCase):
     def execute(self, args: list[str], **kwargs):
         """Run :func:`tests.utils.execute_pwb` with default site.
 
-        .. versionchanged:: 9.1
+        .. version-changed:: 9.1
            pass all arguments to :func:`tests.utils.execute_pwb`; make
            this method public.
 
@@ -1584,7 +1583,7 @@ class DeprecationTestCase(TestCase):
                        instead: str | bool | None) -> Any:
         """Build a deprecation warning result.
 
-        .. versionchanged:: 9.3
+        .. version-changed:: 9.3
            raises TypeError instead of AssertionError
 
         :raises TypeError: invalid *instead* type

@@ -1,18 +1,18 @@
-"""Options and Choices for :py:meth:`pywikibot.input_choice`."""
 #
-# (C) Pywikibot team, 2015-2025
+# (C) Pywikibot team, 2015-2026
 #
 # Distributed under the terms of the MIT license.
 #
+"""Options and Choices for :py:meth:`pywikibot.input_choice`."""
 from __future__ import annotations
 
 import re
 from abc import ABC, abstractmethod
+from collections.abc import Iterable, Mapping, Sequence
 from textwrap import fill
 from typing import TYPE_CHECKING
 
 import pywikibot
-from pywikibot.backports import Iterable, Mapping, Sequence
 
 
 __all__ = (
@@ -78,7 +78,7 @@ class Option(ABC):
 
         :param text: Text into which options are to be formatted
         :param options: Option instances to be formatted
-        :param default: filler for any option's 'default' placeholder
+        :param default: Filler for any option's 'default' placeholder
 
         :return: Text with the options formatted into it
         """
@@ -115,7 +115,7 @@ class Option(ABC):
     def result(self, value: str) -> Any:
         """Return the actual value which is associated by the given one.
 
-        .. versionadded:: 6.2
+        .. version-added:: 6.2
            *result()* is an abstract method and must be defined in
            subclasses
         """
@@ -156,7 +156,7 @@ class OutputOption(Option):
            <userinterfaces._interface_base.ABUIC.input_choice>`
            instead of deprecated :meth:`output`.
 
-        .. versionadded:: 6.2
+        .. version-added:: 6.2
         """
         return ''
 
@@ -168,7 +168,7 @@ class StandardOption(Option):
     def __init__(self, option: str, shortcut: str, **kwargs: Any) -> None:
         """Initializer.
 
-        :param option: option string
+        :param option: Option string
         :param shortcut: Shortcut of the option
         """
         super().__init__(**kwargs)
@@ -508,7 +508,7 @@ class ShowingListOption(ListOption, OutputOption):
 
     """An option to show a list and select an item.
 
-    .. versionadded:: 3.0
+    .. version-added:: 3.0
     """
 
     before_question = True
@@ -548,7 +548,7 @@ class MultipleChoiceList(ListOption):
 
     """An option to select multiple items from a list.
 
-    .. versionadded:: 3.0
+    .. version-added:: 3.0
     """
 
     def test(self, value: str) -> bool:
@@ -579,7 +579,7 @@ class ShowingMultipleChoiceList(ShowingListOption, MultipleChoiceList):
 
     """An option to show a list and select multiple items.
 
-    .. versionadded:: 3.0
+    .. version-added:: 3.0
     """
 
 

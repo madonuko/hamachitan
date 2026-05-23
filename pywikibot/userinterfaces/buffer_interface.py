@@ -1,20 +1,20 @@
-"""Non-interactive interface that stores output.
-
-.. versionadded:: 6.4
-"""
 #
-# (C) Pywikibot team, 2021-2025
+# (C) Pywikibot team, 2021-2026
 #
 # Distributed under the terms of the MIT license.
 #
+"""Non-interactive interface that stores output.
+
+.. version-added:: 6.4
+"""
 from __future__ import annotations
 
 import logging
 import queue
+from collections.abc import Sequence
 from typing import Any
 
 from pywikibot import config
-from pywikibot.backports import Sequence
 from pywikibot.logging import INFO, VERBOSE
 from pywikibot.userinterfaces._interface_base import ABUIC
 
@@ -23,7 +23,7 @@ class UI(ABUIC):
 
     """Collects output into an unseen buffer.
 
-    .. versionadded:: 6.4
+    .. version-added:: 6.4
     """
 
     def __init__(self) -> None:

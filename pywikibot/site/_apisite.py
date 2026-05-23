@@ -1,9 +1,9 @@
-"""Objects representing API interface to MediaWiki site."""
 #
-# (C) Pywikibot team, 2008-2025
+# (C) Pywikibot team, 2008-2026
 #
 # Distributed under the terms of the MIT license.
 #
+"""Objects representing API interface to MediaWiki site."""
 from __future__ import annotations
 
 import datetime
@@ -11,6 +11,7 @@ import re
 import time
 import webbrowser
 from collections import OrderedDict, defaultdict
+from collections.abc import Iterable
 from contextlib import suppress
 from textwrap import fill
 from typing import TYPE_CHECKING, Any, Literal, NamedTuple, TypeVar
@@ -18,9 +19,6 @@ from warnings import warn
 
 import pywikibot
 from pywikibot import login
-from pywikibot.backports import DefaultDict, Iterable, Match
-from pywikibot.backports import OrderedDict as OrderedDictType
-from pywikibot.backports import removesuffix
 from pywikibot.comms import http
 from pywikibot.data import api
 from pywikibot.exceptions import (
@@ -39,6 +37,7 @@ from pywikibot.exceptions import (
     LockedPageError,
     NoCreateError,
     NoPageError,
+    NoSiteLinkError,
     NoUsernameError,
     PageCreatedConflictError,
     PageDeletedConflictError,
@@ -47,7 +46,6 @@ from pywikibot.exceptions import (
     SiteDefinitionError,
     SpamblacklistError,
     TitleblacklistError,
-    UnknownExtensionError,
 )
 from pywikibot.site._basesite import BaseSite
 from pywikibot.site._decorators import need_right
@@ -91,7 +89,7 @@ if TYPE_CHECKING:
 
 __all__ = ('APISite', )
 
-_mw_msg_cache: DefaultDict[str, dict[str, str]] = defaultdict(dict)
+_mw_msg_cache: defaultdict[str, dict[str, str]] = defaultdict(dict)
 
 
 class _OnErrorExc(NamedTuple):
@@ -156,7 +154,7 @@ class APISite(
         :raises pywikibot.exceptions.SiteDefinitionError: if the url
             given in the interwiki table doesn't match any of the
             existing families.
-        :raises KeyError: if the prefix is not an interwiki prefix.
+        :raises KeyError: If the prefix is not an interwiki prefix.
         """
         return self._interwikimap[prefix].site
 
@@ -169,7 +167,7 @@ class APISite(
         function).
 
         :param site: The targeted site, which might be it's own.
-        :raises KeyError: if there is no interwiki prefix for that site.
+        :raises KeyError: If there is no interwiki prefix for that site.
         """
         assert site is not None, 'Site must not be None'
         prefixes = set()
@@ -190,7 +188,7 @@ class APISite(
         :raises pywikibot.exceptions.SiteDefinitionError: if the url
             given in the interwiki table doesn't match any of the
             existing families.
-        :raises KeyError: if the prefix is not an interwiki prefix.
+        :raises KeyError: If the prefix is not an interwiki prefix.
         """
         return self._interwikimap[prefix].local
 
@@ -201,12 +199,12 @@ class APISite(
     ) -> BaseSite:
         """Create a site from a database name using the sitematrix.
 
-        .. versionchanged:: 8.3.3
-           changed from classmethod to staticmethod.
+        .. version-changed:: 8.3.3
+           Changed from classmethod to staticmethod.
 
-        :param dbname: database name
-        :param site: Site to load sitematrix from. (Default meta.wikimedia.org)
-        :return: site object for the database name
+        :param dbname: Database name
+        :param site: Site to load sitematrix from (default meta.wikimedia.org)
+        :return: Site object for the database name
         """
         # TODO this only works for some WMF sites
         if not site:
@@ -228,7 +226,7 @@ class APISite(
                     if m_site['dbname'] == dbname:
                         # extract site from dbname
                         family = m_site['code']
-                        code = removesuffix(dbname, family).replace('_', '-')
+                        code = dbname.removesuffix(family).replace('_', '-')
                         if family == 'wiki':
                             family = 'wikipedia'
                         return pywikibot.Site(code, family)
@@ -253,17 +251,17 @@ class APISite(
         except for 'g_content' which is passed as a normal parameter to
         the generator's Initializer.
 
-        :param gen_class: the type of generator to construct (must be a
+        :param gen_class: The type of generator to construct (must be a
             subclass of pywikibot.data.api._RequestWrapper)
-        :param type_arg: query type argument to be passed to generator's
+        :param type_arg: Query type argument to be passed to generator's
             constructor unchanged (not all types require this)
-        :param namespaces: if not None, limit the query to namespaces in
+        :param namespaces: If not None, limit the query to namespaces in
             this list
-        :param total: if not None, limit the generator to yielding this
+        :param total: If not None, limit the generator to yielding this
             many items in total
-        :return: iterable with parameters set
-        :raises KeyError: a namespace identifier was not resolved
-        :raises TypeError: a namespace identifier has an inappropriate
+        :return: Iterable with parameters set
+        :raises KeyError: A namespace identifier was not resolved
+        :raises TypeError: A namespace identifier has an inappropriate
             type such as NoneType or bool
         """
         req_args: dict[str, Any] = {'site': self}
@@ -306,7 +304,7 @@ class APISite(
     def simple_request(self, **kwargs: Any) -> api.Request:
         """Create a request by defining all kwargs as parameters.
 
-        .. versionadded:: 7.1
+        .. version-added:: 7.1
            `_simple_request` becomes a public method
         """
         return self._request_class({'parameters': kwargs}).create_simple(
@@ -343,17 +341,17 @@ class APISite(
     ) -> None:
         """Log the user in if not already logged in.
 
-        .. versionchanged:: 8.0
+        .. version-changed:: 8.0
            lazy load cookies when logging in. This was dropped in 8.0.4
-        .. versionchanged:: 8.0.4
+        .. version-changed:: 8.0.4
            the *cookie_only* parameter was added and cookies are loaded
            whenever the site is initialized.
 
         .. seealso:: :api:`Login`
 
-        :param autocreate: if true, allow auto-creation of the account
+        :param autocreate: If true, allow auto-creation of the account
             using unified login
-        :param user: bot user name. Overrides the username set by
+        :param user: Bot user name. Overrides the username set by
             BaseSite initializer parameter or user config setting
         :param cookie_only: Only try to login from cookie but do not
             force to login with username/password settings.
@@ -488,8 +486,8 @@ class APISite(
     def file_extensions(self) -> list[str]:
         """File extensions enabled on the wiki.
 
-        .. versionadded:: 8.4
-        .. versionchanged:: 9.2
+        .. version-added:: 8.4
+        .. version-changed:: 9.2
            also include extensions from the image repository
         """
         ext = self.siteinfo.get('fileextensions')
@@ -501,7 +499,7 @@ class APISite(
     def maxlimit(self) -> int:
         """Get the maximum limit of pages to be retrieved.
 
-        .. versionadded:: 7.0
+        .. version-added:: 7.0
         """
         parameter = self._paraminfo.parameter('query+info', 'prop')
         assert parameter is not None
@@ -588,9 +586,9 @@ class APISite(
         .. seealso::
            - :class:`tools.collections.RateLimit` for RateLimit examples.
            - :api:`Ratelimit`
-        .. versionadded:: 9.0
+        .. version-added:: 9.0
 
-        :param action: action which might be limited
+        :param action: Action which might be limited
         :return: RateLimit tuple with ``group``, ``hits`` and ``seconds``
             fields and properties for ``delay`` and ``ratio``.
         """
@@ -649,7 +647,7 @@ class APISite(
         - :meth:`logged_in` to verify the user is loggend in to a site
 
         .. seealso:: :api:`Userinfo`
-        .. versionchanged:: 8.0
+        .. version-changed:: 8.0
            Use API formatversion 2.
 
         :return: A dict with the following keys and values:
@@ -684,7 +682,7 @@ class APISite(
     def userinfo(self) -> None:
         """Delete cached userinfo.
 
-        .. versionadded:: 5.5
+        .. version-added:: 5.5
         """
         if hasattr(self, '_userinfo'):
             del self._userinfo
@@ -694,7 +692,7 @@ class APISite(
                            force: bool = False) -> dict[str, Any]:
         """Retrieve globaluserinfo from site and cache it.
 
-        .. versionadded:: 7.0
+        .. version-added:: 7.0
 
         :param user: The user name or user ID whose global info is
             retrieved. Defaults to the current user.
@@ -748,7 +746,7 @@ class APISite(
         To get globaluserinfo for a given user or user ID use
         :meth:`get_globaluserinfo` method instead
 
-        .. versionadded:: 3.0
+        .. version-added:: 3.0
         """
         return self.get_globaluserinfo()
 
@@ -756,7 +754,7 @@ class APISite(
     def globaluserinfo(self) -> None:
         """Delete cached globaluserinfo of current user.
 
-        .. versionadded:: 7.0
+        .. version-added:: 7.0
         """
         username = self.username()
         assert username is not None
@@ -767,12 +765,15 @@ class APISite(
         """Return True when logged in user is blocked.
 
         To check whether a user can perform an action,
-        the method has_right should be used.
+        the method :meth:`has_right` should be used.
 
-        .. seealso:: :api:`Userinfo`
+        .. seealso::
+           - :meth:`is_partial_blocked`
+           - :meth:`User.is_blocked()<pywikibot.User.is_blocked>`
+           - :attr:`userinfo`
 
-        .. versionadded:: 7.0
-           The `force` parameter
+        .. version-changed:: 7.0
+           The *force* parameter was added.
 
         :param force: Whether the cache should be discarded.
         """
@@ -780,12 +781,33 @@ class APISite(
             del self.userinfo
         return 'blockinfo' in self.userinfo
 
+    def is_partial_blocked(self, *, force: bool = False) -> bool:
+        """Return True if the logged-in user is partially blocked.
+
+        .. seealso::
+           - :meth:`is_blocked`
+           - :meth:`User.is_partial_blocked()
+             <pywikibot.User.is_partial_blocked>`
+           - :attr:`userinfo`
+
+        .. version-added:: 11.0
+
+        :param force: If True, forces reloading the data from API
+        """
+        if force:
+            del self.userinfo
+        return 'partial' in self.userinfo.get('blockinfo', {})
+
     def is_locked(self,
                   user: str | int | None = None,
                   force: bool = False) -> bool:
         """Return True when given user is locked globally.
 
-        .. versionadded:: 7.0
+        .. seealso::
+           - :meth:`is_blocked`
+           - :attr:`globaluserinfo`
+
+        .. version-added:: 7.0
 
         :param user: The user name or user ID. Defaults to the current
             user.
@@ -833,13 +855,13 @@ class APISite(
         Replaces the ``$1`` placeholder from MediaWiki with a
         Python-compatible ``{}``.
 
-        .. versionadded:: 7.0
+        .. version-added:: 7.0
 
-        .. versionchanged:: 10.3
+        .. version-changed:: 10.3
            raises ValueError instead of AttributeError if "$1"
            placeholder is missing.
 
-        :raises ValueError: missing "$1" placeholder
+        :raises ValueError: Missing "$1" placeholder
         """
         path = self.siteinfo['articlepath']
         if '$1' not in path:
@@ -854,7 +876,7 @@ class APISite(
         Letters that can follow a wikilink and are regarded as part of
         this link. This depends on the linktrail setting in LanguageXx.php
 
-        .. versionadded:: 7.3
+        .. version-added:: 7.3
 
         :return: The linktrail regex.
         """
@@ -907,7 +929,7 @@ class APISite(
         :param is_ts: When comparing timestamps (with is_ts=True) the
             start is usually greater than end. Comparing titles this is
             vice versa.
-        :raises AssertionError: start/end values are not comparabel
+        :raises AssertionError: Start/end values are not comparabel
             types or are in the wrong order
         """
         if not (isinstance(end, type(start)) or isinstance(start, type(end))):
@@ -937,7 +959,7 @@ class APISite(
 
         .. seealso:: :api:`Userinfo`
 
-        :param right: a specific right to be validated
+        :param right: A specific right to be validated
         """
         return right.lower() in self.userinfo['rights']
 
@@ -951,20 +973,11 @@ class APISite(
         """
         return group.lower() in self.userinfo['groups']
 
-    @deprecated("userinfo['messages']", since='8.0.0')
-    def messages(self) -> bool:
-        """Return true if the user has new messages, and false otherwise.
-
-        .. deprecated:: 8.0
-           Replaced by :attr:`userinfo['messages']<userinfo>`.
-        """
-        return self.userinfo['messages']
-
     def mediawiki_messages(
         self,
         keys: Iterable[str],
         lang: str | None = None
-    ) -> OrderedDictType[str, str]:
+    ) -> OrderedDict[str, str]:
         """Fetch the text of a set of MediaWiki messages.
 
         The returned dict uses each key to store the associated message.
@@ -972,7 +985,7 @@ class APISite(
         .. seealso:: :api:`Allmessages`
 
         :param keys: MediaWiki messages to fetch
-        :param lang: a language code, default is self.lang
+        :param lang: A language code, default is self.lang
         """
         amlang = lang or self.lang
         if not all(amlang in _mw_msg_cache
@@ -1007,8 +1020,8 @@ class APISite(
     ) -> str:
         """Fetch the text for a MediaWiki message.
 
-        :param key: name of MediaWiki message
-        :param lang: a language code, default is self.lang
+        :param key: Name of MediaWiki message
+        :param lang: A language code, default is self.lang
         """
         return self.mediawiki_messages([key], lang=lang)[key]
 
@@ -1019,8 +1032,8 @@ class APISite(
     ) -> bool:
         """Determine if the site defines a MediaWiki message.
 
-        :param key: name of MediaWiki message
-        :param lang: a language code, default is self.lang
+        :param key: Name of MediaWiki message
+        :param lang: A language code, default is self.lang
         """
         return self.has_all_mediawiki_messages([key], lang=lang)
 
@@ -1031,8 +1044,8 @@ class APISite(
     ) -> bool:
         """Confirm that the site defines a set of MediaWiki messages.
 
-        :param keys: names of MediaWiki messages
-        :param lang: a language code, default is self.lang
+        :param keys: Names of MediaWiki messages
+        :param lang: A language code, default is self.lang
         """
         try:
             self.mediawiki_messages(keys, lang=lang)
@@ -1047,7 +1060,7 @@ class APISite(
         The list is zero-indexed, ordered by month in calendar, and
         should be in the original site language.
 
-        :return: list of tuples (month name, abbreviation)
+        :return: List of tuples (month name, abbreviation)
         """
         if hasattr(self, '_months_names'):
             return self._months_names
@@ -1075,7 +1088,7 @@ class APISite(
         arguments are given, other arguments are joined using MediaWiki
         message 'comma-separator'.
 
-        :param args: text to be expanded
+        :param args: Text to be expanded
         """
         needed_mw_messages = ('and', 'comma-separator', 'word-separator')
         if not args:
@@ -1105,9 +1118,9 @@ class APISite(
         unchanges etc. Can be used to parse magic parser words like
         {{CURRENTTIMESTAMP}}.
 
-        :param text: text to be expanded
-        :param title: page title without section
-        :param includecomments: if True do not strip comments
+        :param text: Text to be expanded
+        :param title: Page title without section
+        :param includecomments: If True do not strip comments
         """
         if not isinstance(text, str):
             raise ValueError('text must be a string')
@@ -1130,7 +1143,7 @@ class APISite(
         It calls :py:obj:`server_time` first so it queries the server to
         get the current server time.
 
-        :return: the server time (as 'yyyymmddhhmmss')
+        :return: The server time (as 'yyyymmddhhmmss')
         """
         return self.server_time().totimestampformat()
 
@@ -1140,7 +1153,7 @@ class APISite(
         It uses the 'time' property of the siteinfo 'general'. It'll
         force a reload before returning the time.
 
-        :return: the current server time
+        :return: The current server time
         """
         return pywikibot.Timestamp.fromISOformat(
             self.siteinfo.get('time', expiry=True))
@@ -1165,7 +1178,7 @@ class APISite(
            :meth:`BaseSite.redirects()
            <pywikibot.site._basesite.BaseSite.redirects>`
 
-        .. versionadded:: 8.4
+        .. version-added:: 8.4
         """
         return [s.lstrip('#') for s in self.getmagicwords('redirect')]
 
@@ -1299,7 +1312,7 @@ class APISite(
         def handle_warning(
             mod: str,
             warning: str
-        ) -> Match[str] | bool | None:
+        ) -> re.Match[str] | bool | None:
             return (mod == 'query' and re.match(
                 r'Unrecognized value for parameter [\'"]meta[\'"]: wikibase',
                 warning))
@@ -1349,9 +1362,9 @@ class APISite(
         >>> site = pywikibot.Site('commons')
         >>> page = site.page_from_repository('Q131303')
         >>> page.title()
-        'Category:Hello World'
+        'Category:Hello World!'
         >>> page
-        Category('Category:Hello World')
+        Category('Category:Hello World!')
 
         It also works for wikibase repositories:
 
@@ -1367,30 +1380,32 @@ class APISite(
         >>> page is None
         True
 
-        .. versionchanged:: 7.7
+        .. version-changed:: 7.7
            No longer raise NotimplementedError if used with a Wikibase
            site.
+        .. version-changed:: 11.0
+           No longer raise UnknownExtensionError if site is not
+           connected to a wikibase but retern None instead.
 
-        :param item: id number of item, "Q###",
+        :param item: Id number of item, "Q###",
         :return: Page, or Category object given by Wikibase item number
             for this site object.
-
-        :raises pywikibot.exceptions.UnknownExtensionError: site has no
-            Wikibase extension
         """
         if not self.has_data_repository:
-            raise UnknownExtensionError(
-                f'Wikibase is not implemented for {self}.')
+            return None
 
         repo = self.data_repository()
         dp = pywikibot.ItemPage(repo, item)
+
         try:
             page_title = dp.getSitelink(self)
-        except NoPageError:
+        except (NoPageError, NoSiteLinkError):
             return None
+
         page = pywikibot.Page(self, page_title)
         if page.namespace() == Namespace.CATEGORY:
             page = pywikibot.Category(page)
+
         return page
 
     def nice_get_address(self, title: str) -> str:
@@ -1405,13 +1420,13 @@ class APISite(
         If optional argument *all_ns* is true, return all recognized
         values for this namespace.
 
-        .. versionchanged:: 9.0
+        .. version-changed:: 9.0
            *all* parameter was renamed to *all_ns*.
 
         :param num: Namespace constant.
         :param all_ns: If True return a :class:`Namespace` object.
             Otherwise return the namespace name.
-        :return: local name or :class:`Namespace` object
+        :return: Local name or :class:`Namespace` object
         """
         if all_ns:
             return self.namespaces[num]
@@ -1425,9 +1440,9 @@ class APISite(
     ) -> None:
         """Update page attributes.
 
-        :param page: page object to be updated
+        :param page: Page object to be updated
         :param query: API query generator
-        :param verify_imageinfo: if given, every pageitem is checked
+        :param verify_imageinfo: If given, every pageitem is checked
             whether 'imageinfo' is missing. In that case an exception is
             raised.
         :raises NoPageError: 'missing' key is found in pageitem
@@ -1497,18 +1512,18 @@ class APISite(
 
         .. note:: Parameters validation and error handling left to the
            API call.
-        .. versionchanged:: 8.2
+        .. version-changed:: 8.2
            *mediatype* and *bitdepth* properties were added.
-        .. versionchanged:: 8.6.
+        .. version-changed:: 8.6.
            Added *timestamp* parameter.
            Metadata are loaded only if *history* is False.
         .. seealso:: :api:`Imageinfo`
 
-        :param history: if true, return the image's version history
-        :param url_width: get info for a thumbnail with given width
-        :param url_height: get info for a thumbnail with given height
-        :param url_param:  get info for a thumbnail with given param
-        :param timestamp: timestamp of the image's version to retrieve.
+        :param history: If true, return the image's version history
+        :param url_width: Get info for a thumbnail with given width
+        :param url_height: Get info for a thumbnail with given height
+        :param url_param:  Get info for a thumbnail with given param
+        :param timestamp: Timestamp of the image's version to retrieve.
             It has effect only if *history* is False.
             If omitted, the latest version will be fetched.
         """
@@ -1561,10 +1576,10 @@ class APISite(
 
         .. seealso:: :meth:`page.BasePage.has_permission` (should be preferred)
 
-        :param page: a pywikibot.page.BasePage object
-        :param action: a valid restriction type like 'edit', 'move'
+        :param page: A pywikibot.page.BasePage object
+        :param action: A valid restriction type like 'edit', 'move'
 
-        :raises ValueError: invalid action parameter
+        :raises ValueError: Invalid action parameter
         """
         if action not in self.restrictions['types']:
             raise ValueError(
@@ -1595,22 +1610,22 @@ class APISite(
     ) -> pywikibot.page.Page:
         """Return page object for the redirect target of page.
 
-        .. versionadded:: 9.3
+        .. version-added:: 9.3
            *ignore_section* parameter
 
         .. seealso:: :meth:`page.BasePage.getRedirectTarget`
 
-        :param page: page to search redirects for
-        :param ignore_section: do not include section to the target even
+        :param page: Page to search redirects for
+        :param ignore_section: Do not include section to the target even
             the link has one
-        :return: redirect target of page
+        :return: Redirect target of page
 
-        :raises CircularRedirectError: page is a circular redirect
-        :raises InterwikiRedirectPageError: the redirect target is on
+        :raises CircularRedirectError: Page is a circular redirect
+        :raises InterwikiRedirectPageError: The redirect target is on
             another site
-        :raises IsNotRedirectPageError: page is not a redirect
-        :raises RuntimeError: no redirects found
-        :raises SectionError: the section is not found on target page
+        :raises IsNotRedirectPageError: Page is not a redirect
+        :raises RuntimeError: No redirects found
+        :raises SectionError: The section is not found on target page
             and *ignore_section* is not set
         """
         if not self.page_isredirect(page):
@@ -1700,19 +1715,7 @@ class APISite(
         page._redirtarget = target
         return page._redirtarget
 
-    @deprecated(since='8.0.0')
-    def validate_tokens(self, types: list[str]) -> list[str]:
-        """Validate if requested tokens are acceptable.
-
-        Valid tokens may depend on mw version.
-
-        .. deprecated:: 8.0
-        """
-        data = self._paraminfo.parameter('query+tokens', 'type')
-        assert data is not None
-        return [token for token in types if token in data['type']]
-
-    def get_tokens(self, types: list[str], *args, **kwargs) -> dict[str, str]:
+    def get_tokens(self, types: list[str]) -> dict[str, str]:
         r"""Preload one or multiple tokens.
 
         **Usage**
@@ -1738,28 +1741,19 @@ class APISite(
         You should not call this method directly, especially if you only
         need a specific token. Use :attr:`tokens` property instead.
 
-        .. versionchanged:: 8.0
-           ``all`` parameter is deprecated. Use an empty list for
+        .. version-changed:: 8.0
+           *all* parameter is deprecated. Use an empty list for
            ``types`` instead.
-        .. note:: ``args`` and ``kwargs`` are not used for deprecation
-           warning only.
+        .. version-changed:: 11.0
+           *all* parameter was removed.
         .. seealso:: :api:`Tokens`
 
-        :param types: the types of token (e.g., "csrf", "login", "patrol").
+        :param types: The types of token (e.g., "csrf", "login", "patrol").
             If the list is empty all available tokens are loaded. See
             API documentation for full list of types.
-        :return: a dict with retrieved valid tokens.
+        :return: A dict with retrieved valid tokens.
         """
-        # deprecate 'all' parameter
-        if args or kwargs:
-            issue_deprecation_warning("'all' parameter",
-                                      "empty list for 'types' parameter",
-                                      since='8.0.0')
-            load_all = kwargs.get('all', args[0] if args else False)
-        else:
-            load_all = False
-
-        if not types or load_all is not False:
+        if not types:  # load all
             pdata = self._paraminfo.parameter('query+tokens', 'type')
             assert pdata is not None
             types = pdata['type']
@@ -1772,7 +1766,7 @@ class APISite(
 
         user_tokens = {}
         if data.get('tokens'):
-            user_tokens = {removesuffix(key, 'token'): val
+            user_tokens = {key.removesuffix('token'): val
                            for key, val in data['tokens'].items()
                            if val != '+\\'}
 
@@ -1808,7 +1802,7 @@ class APISite(
         '1c8...9d3+\\'
         >>> del site.tokens  # another variant to clear the cache
 
-        .. versionchanged:: 8.0
+        .. version-changed:: 8.0
            ``tokens`` attribute became a property to enable deleter.
         .. warning:: A deprecation warning is shown if the token name is
            outdated, see :api:`Tokens (action)`.
@@ -1825,7 +1819,7 @@ class APISite(
     def get_parsed_page(self, page: BasePage) -> str:
         """Retrieve parsed text of the page using action=parse.
 
-        .. versionchanged:: 7.1
+        .. version-changed:: 7.1
            raises KeyError instead of AssertionError
 
         .. seealso::
@@ -1893,7 +1887,7 @@ class APISite(
         If more than one target id is provided, the same action is taken for
         all of them.
 
-        .. versionadded:: 6.0
+        .. version-added:: 6.0
 
         :param targettype: Type of target. One of "archive", "filearchive",
             "logging", "oldimage", "revision".
@@ -2010,14 +2004,16 @@ class APISite(
             as the new text to be saved to the wiki
         :param summary: The edit summary for the modification (optional,
             but most wikis strongly encourage its use)
-        :param minor: if True (default), mark edit as minor
-        :param notminor: if True, override account preferences to mark
+        :param minor: If True (default), mark edit as minor
+        :param notminor: If True, override account preferences to mark
             edit as non-minor
-        :param recreate: if True (default), create new page even if this
+        :param bot: If True and bot right is given, mark edit with bot
+            flag
+        :param recreate: If True (default), create new page even if this
             title has previously been deleted
-        :param createonly: if True, raise an error if this title already
+        :param createonly: If True, raise an error if this title already
             exists on the wiki
-        :param nocreate: if True, raise a :exc:`exceptions.NoCreateError`
+        :param nocreate: If True, raise a :exc:`exceptions.NoCreateError`
             exception if the page does not exist
         :param watch: Specify how the watchlist is affected by this edit,
             set to one of ``watch``, ``unwatch``, ``preferences``,
@@ -2029,8 +2025,6 @@ class APISite(
             * nochange --- don't change the watchlist
 
             If None (default), follow bot account's default settings
-        :param bot: if True and bot right is given, mark edit with bot
-            flag
 
         :keyword str text: Overrides Page.text
         :keyword int | str section: Edit an existing numbered section or
@@ -2048,7 +2042,7 @@ class APISite(
             page requires solving a captcha
         :raises CascadeLockedPageError: The page is protected with
             protection cascade
-        :raises EditConflictError: an edit conflict occurred
+        :raises EditConflictError: An edit conflict occurred
         :raises Error: No text to be saved or API editing not enabled on
             site or user is not authorized to edit, create pages or
             create image redirects on site or bot is not logged in and
@@ -2305,8 +2299,8 @@ class APISite(
             will be merged into the destination page (if not given or False,
             all revisions will be merged)
         :param reason: Optional reason for the history merge
-        :raises APIError: unexpected APIError
-        :raises Error: expected APIError or unexpected response
+        :raises APIError: Unexpected APIError
+        :raises Error: Expected APIError or unexpected response
         :raises NoPageError: *source* or *dest* does not exist
         :raises PageSaveRelatedError: *source* is equal to *dest*
         """
@@ -2413,14 +2407,14 @@ class APISite(
 
         .. seealso:: :api:`Move`
 
-        .. versionchanged:: 7.2
+        .. version-changed:: 7.2
            The `movesubpages` parameter was added
 
-        :param page: the Page to be moved (must exist)
-        :param newtitle: the new title for the Page
-        :param summary: edit summary (required!)
-        :param movetalk: if True (default), also move the talk page if possible
-        :param noredirect: if True, suppress creation of a redirect from the
+        :param page: The Page to be moved (must exist)
+        :param newtitle: The new title for the Page
+        :param summary: Edit summary (required!)
+        :param movetalk: If True (default), also move the talk page if possible
+        :param noredirect: If True, suppress creation of a redirect from the
             old title to the new one
         :param movesubpages: Rename subpages, if applicable.
         :return: Page object with the new title
@@ -2524,7 +2518,7 @@ class APISite(
         will revert the last edit(s) made by the specified user on the
         given page.
 
-        .. versionchanged:: 10.5
+        .. version-changed:: 10.5
            Added *pageid* as alternative to *page* (one must be given).
            *markbot* defaults to True if the rollbacker is a bot and not
            explicitly given. The method now returns a dictionary with
@@ -2533,7 +2527,7 @@ class APISite(
         .. seealso::
            :meth:`page.BasePage.rollback`
 
-        :param page: the Page to be rolled back. Cannot be used together
+        :param page: The Page to be rolled back. Cannot be used together
             with *pageid*.
         :param pageid: Page ID of the page to be rolled back. Cannot be
             used together with *page*.
@@ -2650,31 +2644,43 @@ class APISite(
 
         Requires appropriate privileges.
 
-        .. seealso:: :api:`Delete`
-
         Page to be deleted can be given either as Page object or as pageid.
         To delete a specific version of an image the oldimage identifier
         must be provided.
 
-        .. versionadded:: 6.1
+        .. version-added:: 6.1
            renamed from `deletepage`
 
-        .. versionchanged:: 6.1
+        .. version-changed:: 6.1
            keyword only parameter `oldimage` was added.
 
-        .. versionchanged:: 7.1
+        .. version-changed:: 7.1
            keyword only parameter `deletetalk` was added.
 
-        .. versionchanged:: 8.1
+        .. version-changed:: 8.1
            raises :exc:`exceptions.NoPageError` if page does not exist.
+
+        .. version-changed:: 11.2
+           *deletetalk* option was implemented for MediaWiki < 1.38wmf24.
+
+        .. seealso::
+           - :api:`Delete`
+           - :meth:`undelete`
+           - :meth:`page.BasePage.delete`
 
         :param page: Page to be deleted or its pageid.
         :param reason: Deletion reason.
         :param deletetalk: Also delete the talk page, if it exists.
-        :param oldimage: oldimage id of the file version to be deleted.
+        :param oldimage: Oldimage id of the file version to be deleted.
             If a BasePage object is given with page parameter, it has to
             be a FilePage.
-        :raises TypeError, ValueError: page has wrong type/value.
+        :raises TypeError: *oldimage* option is given but page object is
+            neither a page id nor a :class:`pywikibot.FilePage`.
+        :raises NoPageError: the *page* does not exists.
+        :raises Error: Any of the following conditions occurred:
+            noapiwrite, writeapidenied, permissiondenied, cantdelete,
+            nodeleteablefile.
+        :raises APIError: Any other API error occurred.
         """
         if oldimage and isinstance(page, pywikibot.page.BasePage) \
            and not isinstance(page, pywikibot.FilePage):
@@ -2696,14 +2702,15 @@ class APISite(
         else:
             params['pageid'] = int(page)
             title = str(page)
-
-        if deletetalk:
-            if self.mw_version < '1.38wmf24':
-                pywikibot.warning(
-                    f'deletetalk is not available on {self.mw_version}'
+            if deletetalk and self.mw_version < '1.38':
+                raise TypeError(
+                    "'page' must be a BasePage not a "
+                    f"'{page.__class__.__name__}' when "
+                    'deletetalk=True.'
                 )
-            else:
-                params['deletetalk'] = deletetalk
+
+        if self.mw_version >= '1.38':
+            params['deletetalk'] = deletetalk
 
         req = self.simple_request(**params)
         self.lock_page(page)
@@ -2732,6 +2739,19 @@ class APISite(
         finally:
             self.unlock_page(page)
 
+        if deletetalk and self.mw_version < '1.38':
+            talk_page = page.toggleTalkPage()
+            if page.isTalkPage():
+                pywikibot.warning(
+                    'Cannot delete associated talk page of a talk page.'
+                )
+            elif not talk_page.exists():
+                pywikibot.warning(
+                    'Cannot delete a non-existing associated talk page.'
+                )
+            else:
+                self.delete(talk_page, reason)
+
     @need_right('undelete')
     def undelete(
         self,
@@ -2743,14 +2763,17 @@ class APISite(
     ) -> None:
         """Undelete page from the wiki. Requires appropriate privilege level.
 
-        .. seealso:: :api:`Undelete`
-
-        .. versionadded:: 6.1
+        .. version-added:: 6.1
            renamed from `undelete_page`
 
-        .. versionchanged:: 6.1
+        .. version-changed:: 6.1
            `fileids` parameter was added,
            keyword argument required for `revisions`.
+
+        .. seealso::
+           - :api:`Undelete`
+           - :meth:`delete`
+           - :meth:`page.BasePage.undelete`
 
         :param page: Page to be deleted.
         :param reason: Undeletion reason.
@@ -2798,10 +2821,10 @@ class APISite(
         >>> sorted(site.protection_types())
         ['create', 'edit', 'move', 'upload']
 
-        .. deprecated:: 10.5
+        .. version-deprecated:: 10.5
            Use :attr:`restrictions[types]<restrictions>` instead.
 
-        :return: protection types available
+        :return: Protection types available
         """
         return self.restrictions['types']
 
@@ -2815,10 +2838,10 @@ class APISite(
         >>> sorted(site.protection_levels())
         ['', 'autoconfirmed', ... 'sysop', 'templateeditor']
 
-        .. deprecated:: 10.5
+        .. version-deprecated:: 10.5
            Use :attr:`restrictions[levels]<restrictions>` instead.
 
-        :return: protection levels available
+        :return: Protection levels available
         """
         return self.restrictions['levels']
 
@@ -2835,10 +2858,10 @@ class APISite(
         >>> sorted(r['levels'])
         ['', 'autoconfirmed', ... 'sysop', 'templateeditor']
 
-        .. versionadded:: 10.5
+        .. version-added:: 10.5
         .. seealso:: :meth:`page_restrictions`
 
-        :return: dict with keys 'types', 'levels', 'cascadinglevels' and
+        :return: Dict with keys 'types', 'levels', 'cascadinglevels' and
             'semiprotectedlevels', all as sets of strings
         """
         return {k: set(v) for k, v in self.siteinfo['restrictions'].items()}
@@ -3006,7 +3029,7 @@ class APISite(
     ) -> bool:
         """Add or remove pages from watchlist.
 
-        .. versionchanged:: 10.4.0
+        .. version-changed:: 10.4.0
            Added the *expiry* parameter to specify watch expiry time.
            Passing *unwatch* as a positional parameter is deprecated;
            it must be passed as keyword argument.
@@ -3036,7 +3059,7 @@ class APISite(
             defined end date, return False if the page does not exist.
         :raises APIError: badexpiry: Invalid value for expiry parameter
         :raises KeyError: 'watch' isn't in API response
-        :raises TypeError: unexpected keyword argument
+        :raises TypeError: Unexpected keyword argument
         """
         parameters = {
             'action': 'watch',
@@ -3076,15 +3099,15 @@ class APISite(
     ) -> bool:
         """Purge the server's cache for one or multiple pages.
 
-        :param pages: list of Page objects
-        :param redirects: Automatically resolve redirects.
-        :param converttitles: Convert titles to other variants if
-            necessary. Only works if the wiki's content language
-            supports variant conversion.
+        :param pages: List of Page objects
         :param forcelinkupdate: Update the links tables.
         :param forcerecursivelinkupdate: Update the links table, and
             update the links tables for any page that uses this page as
             a template.
+        :param converttitles: Convert titles to other variants if
+            necessary. Only works if the wiki's content language
+            supports variant conversion.
+        :param redirects: Automatically resolve redirects.
         :return: True if API returned expected response; False otherwise
         """
         req = self.simple_request(action='purge', titles=list(set(pages)))
@@ -3150,15 +3173,15 @@ class APISite(
 
         Either source_filename or source_url, but not both, must be provided.
 
-        .. versionchanged:: 6.0
+        .. version-changed:: 6.0
            keyword arguments required for all parameters except `filepage`
 
-        .. versionchanged:: 6.2:
+        .. version-changed:: 6.2:
            asynchronous upload is used if `asynchronous` parameter is set.
 
         For keyword arguments refer :class:`pywikibot.site._upload.Uploader`
 
-        :param filepage: a FilePage object from which the wiki-name of the
+        :param filepage: A FilePage object from which the wiki-name of the
             file will be obtained.
         :return: It returns True if the upload was successful and False
             otherwise.
@@ -3175,7 +3198,7 @@ class APISite(
 
         .. seealso:: :api:`Pagepropnames`
 
-        :param force: force to retrieve userinfo ignoring cache
+        :param force: Force to retrieve userinfo ignoring cache
         """
         if force or not hasattr(self, '_property_names'):
             ppngen = self._generator(api.ListGenerator, 'pagepropnames')
@@ -3194,9 +3217,9 @@ class APISite(
            result.
         .. seealso:: :api:`Compare`
 
-        :param old: starting revision ID, title, Page, or Revision
-        :param diff: ending revision ID, title, Page, or Revision
-        :param difftype: type of diff. One of 'table' or 'inline'.
+        :param old: Starting revision ID, title, Page, or Revision
+        :param diff: Ending revision ID, title, Page, or Revision
+        :param difftype: Type of diff. One of 'table' or 'inline'.
         :return: Returns an HTML string of a diff between two revisions.
         """
         # check old and diff types

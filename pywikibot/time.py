@@ -1,12 +1,12 @@
-"""Time handling module.
-
-.. versionadded:: 7.5
-"""
 #
-# (C) Pywikibot team, 2007-2025
+# (C) Pywikibot team, 2007-2026
 #
 # Distributed under the terms of the MIT license.
 #
+"""Time handling module.
+
+.. version-added:: 7.5
+"""
 from __future__ import annotations
 
 import datetime
@@ -17,7 +17,7 @@ import types
 from contextlib import suppress
 
 import pywikibot
-from pywikibot.tools import PYTHON_VERSION, classproperty, deprecated
+from pywikibot.tools import PYTHON_VERSION, classproperty
 
 
 __all__ = (
@@ -28,7 +28,7 @@ __all__ = (
     'TZoneFixedOffset'
 )
 
-#: .. versionadded:: 7.5
+#: .. version-added:: 7.5
 MW_KEYS = types.MappingProxyType({
     's': 'seconds',
     'h': 'hours',
@@ -67,7 +67,7 @@ class Timestamp(datetime.datetime):
     this is more reliable than using :meth:`Timestamp.utcnow` or
     :meth:`Timestamp.nowutc`.
 
-    .. versionchanged:: 7.5
+    .. version-changed:: 7.5
        moved to :mod:`time` module
     """
 
@@ -88,13 +88,13 @@ class Timestamp(datetime.datetime):
         - ISO8601 format: ``YYYY-MM-DD[T ]HH:MM:SS[Z|±HH[MM[SS[.ffffff]]]]``
         - POSIX format: seconds from Unix epoch ``S{1,13}[.ffffff]]``
 
-        .. versionadded:: 7.5
-        .. versionchanged:: 8.0
+        .. version-added:: 7.5
+        .. version-changed:: 8.0
            raises *TypeError* instead of *ValueError*.
 
         :param ts: Timestamp, datetime.datetime or str
         :return: Timestamp object
-        :raises TypeError: conversion failed
+        :raises TypeError: Conversion failed
         """
         if isinstance(ts, cls):
             return ts
@@ -109,7 +109,7 @@ class Timestamp(datetime.datetime):
     def _from_datetime(dt: datetime.datetime) -> Timestamp:
         """Convert a datetime.datetime timestamp to a Timestamp object.
 
-        .. versionadded:: 7.5
+        .. version-added:: 7.5
         """
         return Timestamp(dt.year, dt.month, dt.day, dt.hour,
                          dt.minute, dt.second, dt.microsecond,
@@ -121,7 +121,7 @@ class Timestamp(datetime.datetime):
 
         Mediwiki timestamp format: YYYYMMDDHHMMSS
 
-        .. versionadded:: 7.5
+        .. version-added:: 7.5
         """
         RE_MW = r'\d{14}'  # noqa: N806
         m = re.fullmatch(RE_MW, timestr)
@@ -139,7 +139,7 @@ class Timestamp(datetime.datetime):
         ISO8601 format:
         ``YYYY-MM-DD[T ]HH:MM:SS[[.,]ffffff][Z|±HH[MM[SS[.ffffff]]]]``
 
-        .. versionadded:: 7.5
+        .. version-added:: 7.5
         """
         RE_ISO8601 = (r'(?:\d{4}-\d{2}-\d{2})(?P<sep>[T ])'  # noqa: N806
                       r'(?:\d{2}:\d{2}:\d{2})(?P<u>[.,]\d{1,6})?'
@@ -170,8 +170,6 @@ class Timestamp(datetime.datetime):
         ts = cls.strptime(strpstr, strpfmt)
         if ts.tzinfo is not None:
             ts = ts.astimezone(datetime.timezone.utc).replace(tzinfo=None)
-            # TODO: why pytest in py37 fails without this?
-            ts = cls._from_datetime(ts)
 
         return ts
 
@@ -181,7 +179,7 @@ class Timestamp(datetime.datetime):
 
         POSIX format: ``SECONDS[.ffffff]]``
 
-        .. versionadded:: 7.5
+        .. version-added:: 7.5
         """
         RE_POSIX = r'(?P<S>-?\d{1,13})(?:\.(?P<u>\d{1,6}))?'  # noqa: N806
         m = re.fullmatch(RE_POSIX, timestr)
@@ -204,7 +202,7 @@ class Timestamp(datetime.datetime):
     def _from_string(cls, timestr: str) -> Timestamp:
         """Convert a string to a Timestamp object.
 
-        .. versionadded:: 7.5
+        .. version-added:: 7.5
         """
         handlers = [
             cls._from_mw,
@@ -218,15 +216,6 @@ class Timestamp(datetime.datetime):
 
         raise ValueError(f'time data {timestr!r} does not match any format.')
 
-    @deprecated('replace method', since='8.0.0')  # type: ignore[misc]
-    def clone(self) -> Timestamp:
-        """Clone this instance.
-
-        .. deprecated:: 8.0
-           Use :meth:`replace` method instead.
-        """
-        return self.replace()
-
     @classproperty
     def ISO8601Format(cls) -> str:  # noqa: N802
         """ISO8601 format string class property for compatibility purpose."""
@@ -236,7 +225,7 @@ class Timestamp(datetime.datetime):
     def _ISO8601Format(cls, sep: str = 'T') -> str:  # noqa: N802
         """ISO8601 format string.
 
-        :param sep: one-character separator, placed between the date and
+        :param sep: One-character separator, placed between the date and
             time
         :return: ISO8601 format string
         """
@@ -250,7 +239,7 @@ class Timestamp(datetime.datetime):
         """Convert an ISO 8601 timestamp to a Timestamp object.
 
         :param ts: ISO 8601 timestamp or a Timestamp object already
-        :param sep: one-character separator, placed between the date and
+        :param sep: One-character separator, placed between the date and
             time
         :return: Timestamp object
         """
@@ -272,9 +261,9 @@ class Timestamp(datetime.datetime):
                             strict: bool = False) -> Timestamp:
         """Convert a MediaWiki internal timestamp to a Timestamp object.
 
-        .. versionchanged:: 3.0
+        .. version-changed:: 3.0
            create a Timestamp if only year, month and day are given.
-        .. versionchanged:: 8.0
+        .. version-changed:: 8.0
            the *strict* parameter was added which discards missing
            element tolerance.
 
@@ -290,10 +279,10 @@ class Timestamp(datetime.datetime):
         ...
         ValueError: time data '20221109' does not match MW format.
 
-        :param ts: the timestamp to be converted
+        :param ts: The timestamp to be converted
         :param strict: If true, do not ignore missing timestamp elements
             for hours, minutes or seconds
-        :return: return the *Timestamp* object from given *ts*.
+        :return: Return the *Timestamp* object from given *ts*.
         :raises ValueError: The timestamp is invalid, e.g. missing or
             invalid timestamp component.
         """
@@ -330,21 +319,21 @@ class Timestamp(datetime.datetime):
 
         See Note in datetime.timestamp().
 
-        .. versionadded:: 7.5
+        .. version-added:: 7.5
         """
         return self.replace(tzinfo=datetime.timezone.utc).timestamp()
 
     def posix_timestamp_format(self) -> str:
         """Convert object to a POSIX timestamp format.
 
-        .. versionadded:: 7.5
+        .. version-added:: 7.5
         """
         return f'{self.posix_timestamp():.6f}'
 
     def __repr__(self) -> str:
         """Unify repr string between CPython and Pypy (T325905).
 
-        .. versionadded:: 8.0
+        .. version-added:: 8.0
         """
         s = super().__repr__()
         return f'{type(self).__name__}{s[s.find("("):]}'
@@ -376,7 +365,7 @@ class Timestamp(datetime.datetime):
            aware Timestamps/datetimes (i.e. missing or having timezone).
            A TypeError will be raised in such cases.
 
-        .. versionadded:: 9.0
+        .. version-added:: 9.0
         .. seealso::
            - :python:`datetime.now()
              <library/datetime.html#datetime.datetime.now>`
@@ -422,7 +411,7 @@ class Timestamp(datetime.datetime):
         .. hint::
            This method might be deprecated later.
 
-        .. versionadded:: 9.0
+        .. version-added:: 9.0
         .. seealso::
            :python:`datetime.utcnow()
            <library/datetime.html#datetime.datetime.utcnow>`
@@ -436,9 +425,9 @@ class TZoneFixedOffset(datetime.tzinfo):
 
     """Class building tzinfo objects for fixed-offset time zones.
 
-    :param offset: a number indicating fixed offset in minutes east from
+    :param offset: A number indicating fixed offset in minutes east from
         UTC
-    :param name: a string with name of the timezone
+    :param name: A string with name of the timezone
     """
 
     def __init__(self, offset: int, name: str) -> None:
@@ -471,7 +460,7 @@ def str2timedelta(
 ) -> datetime.timedelta:
     """Return a timedelta for a shorthand duration.
 
-    :param string: a string defining a time period:
+    :param string: A string defining a time period:
 
     Examples::
 
@@ -481,10 +470,10 @@ def str2timedelta(
         2w - 2 weeks (14 days)
         1y - 1 year
 
-    :param timestamp: a timestamp to calculate a more accurate duration offset
+    :param timestamp: A timestamp to calculate a more accurate duration offset
         used by years
     :type timestamp: datetime.datetime
-    :return: the corresponding timedelta object
+    :return: The corresponding timedelta object
     """
     key, duration = parse_duration(string)
 
@@ -504,7 +493,7 @@ def str2timedelta(
 def parse_duration(string: str) -> tuple[str, int]:
     """Return the key and duration extracted from the string.
 
-    :param string: a string defining a time period
+    :param string: A string defining a time period
 
     Examples::
 
@@ -514,7 +503,7 @@ def parse_duration(string: str) -> tuple[str, int]:
         2w - 2 weeks (14 days)
         1y - 1 year
 
-    :return: key and duration extracted form the string
+    :return: Key and duration extracted form the string
     """
     if len(string) < 2:
         raise ValueError('Time period should be a numeric value followed by '

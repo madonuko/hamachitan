@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-r"""Bot to upload pages from a text file.
+#
+# (C) Pywikibot team, 2004-2026
+#
+# Distributed under the terms of the MIT license.
+#
+"""Bot to upload pages from a text file.
 
 This bot takes its input from the UTF-8 text file that contains a number
 of pages to be put on the wiki. The pages should all have the same
@@ -70,20 +75,15 @@ added between the existing and the new text. For example a parameter
 ``-appendtop:foo`` would add 'foo' between them. A new line can be added
 between them by specifying '\n' as a value.
 """
-#
-# (C) Pywikibot team, 2004-2025
-#
-# Distributed under the terms of the MIT license.
-#
 from __future__ import annotations
 
 import os
 import re
+from collections.abc import Generator
 from pathlib import Path
 
 import pywikibot
 from pywikibot import config, i18n
-from pywikibot.backports import Generator
 from pywikibot.bot import CurrentPageBot, OptionHandler, SingleSiteBot
 from pywikibot.pagegenerators import PreloadingGenerator
 from pywikibot.tools.collections import GeneratorWrapper
@@ -99,7 +99,7 @@ class NoTitleError(Exception):
     def __init__(self, offset: int, source: str | None = None) -> None:
         """Initializer.
 
-        .. versionchanged:: 10.7
+        .. version-changed:: 10.7
            *source* was added; a message was passed to Exception super
            class.
         """
@@ -190,7 +190,7 @@ class PageFromFileReader(OptionHandler, GeneratorWrapper):
 
     """Generator class, responsible for reading the file.
 
-    .. versionchanged:: 7.6
+    .. version-changed:: 7.6
        subclassed from :class:`pywikibot.tools.collections.GeneratorWrapper`
     """
 
@@ -231,12 +231,12 @@ class PageFromFileReader(OptionHandler, GeneratorWrapper):
         return page_regex, title_regex
 
     @property
-    def generator(self) -> Generator[pywikibot.Page, None, None]:
+    def generator(self) -> Generator[pywikibot.Page]:
         """Read file and yield a page with content from file.
 
         content is stored as a page attribute defined by CTX_ATTR.
 
-        .. versionchanged:: 7.6
+        .. version-changed:: 7.6
            changed from iterator method to generator property
         """
         pywikibot.info(f"\n\nReading '{self.filename}'...")

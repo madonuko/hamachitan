@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Utility to show pywikibot colors."""
 #
-# (C) Pywikibot team, 2016-2024
+# (C) Pywikibot team, 2016-2026
 #
 # Distributed under the terms of the MIT license.
 #
+"""Utility to show pywikibot colors."""
 from __future__ import annotations
 
 import pywikibot
@@ -25,7 +25,7 @@ def main() -> None:
     max_len_bc_color = len(max(bg_colors, key=len))
 
     for bg_col in bg_colors:
-        # Three lines per each backgoung color.
+        # Three lines per each background color.
         for fg_col_group in batched(fg_colors, n_fg_colors // 4 + 1):
             line = ''
             for fg_col in fg_col_group:

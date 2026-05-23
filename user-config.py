@@ -3,8 +3,8 @@
 # pwb generate_user_files
 
 mylang = 'en'
-family = 'atlwiki'
-usernames['atlwiki']['en'] = 'Hamachitan'
+family = 'fosswiki'
+usernames['fosswiki']['en'] = 'Hamachitan'
 # https://www.mediawiki.org/wiki/Manual:Pywikibot/User-agent
 user_agent_format = 'Hamachitan ({script_comments})'
 user_agent_description = open('./hamachitan_user_agent.txt').read().strip()

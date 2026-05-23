@@ -1,9 +1,9 @@
-"""Objects representing Namespaces of MediaWiki site."""
 #
-# (C) Pywikibot team, 2008-2025
+# (C) Pywikibot team, 2008-2026
 #
 # Distributed under the terms of the MIT license.
 #
+"""Objects representing Namespaces of MediaWiki site."""
 from __future__ import annotations
 
 from abc import ABCMeta
@@ -11,14 +11,13 @@ from collections.abc import Iterable, Mapping
 from enum import IntEnum
 from typing import Union
 
-from pywikibot.backports import Iterable as IterableType
 from pywikibot.tools import ComparableMixin, classproperty
 
 
 SingleNamespaceType = Union[int, str, 'Namespace']
 NamespaceArgType = Union[
     SingleNamespaceType,
-    IterableType[SingleNamespaceType],
+    Iterable[SingleNamespaceType],
     None,
 ]
 
@@ -50,7 +49,7 @@ class BuiltinNamespace(IntEnum):
     def canonical(self) -> str:
         """Canonical form of MediaWiki built-in namespace.
 
-        .. versionadded:: 7.1
+        .. version-added:: 7.1
         """
         name = '' if self == 0 else self.name.capitalize().replace('_', ' ')
         return name.replace('Mediawiki', 'MediaWiki')
@@ -60,7 +59,7 @@ class MetaNamespace(ABCMeta):
 
     """Metaclass for Namespace attribute settings.
 
-    .. versionadded:: 9.0
+    .. version-added:: 9.0
     """
 
     def __new__(cls, name, bases, dic):
@@ -87,7 +86,7 @@ class Namespace(Iterable, ComparableMixin, metaclass=MetaNamespace):
     If only one of canonical_name and custom_name are available, both
     properties will have the same value.
 
-    .. versionchanged:: 9.0
+    .. version-changed:: 9.0
        metaclass from :class:`MetaNamespace`
     """
 
@@ -150,7 +149,7 @@ class Namespace(Iterable, ComparableMixin, metaclass=MetaNamespace):
     def canonical_namespaces(cls) -> dict[int, str]:
         """Return the canonical forms of MediaWiki built-in namespaces.
 
-        .. versionchanged:: 7.1
+        .. version-changed:: 7.1
            implemented as classproperty using BuiltinNamespace IntEnum.
         """
         return {item.value: item.canonical for item in BuiltinNamespace}
@@ -173,7 +172,7 @@ class Namespace(Iterable, ComparableMixin, metaclass=MetaNamespace):
         The comparison is case insensitive, and item may have a single
         colon on one or both sides of the name.
 
-        :param item: name to check
+        :param item: Name to check
         """
         if item == '' and self.id == BuiltinNamespace.MAIN:
             return True
@@ -189,7 +188,7 @@ class Namespace(Iterable, ComparableMixin, metaclass=MetaNamespace):
 
         This method is implemented to be independent from __len__ method.
 
-        .. versionadded:: 7.0
+        .. version-added:: 7.0
 
         :return: Always return True like generic object class.
         """
@@ -361,7 +360,7 @@ class NamespacesDict(Mapping):
     def __getitem__(self, key: Namespace | int | str) -> Namespace:
         """Get the namespace with the given key.
 
-        :param key: namespace key
+        :param key: Namespace key
         """
         if isinstance(key, (Namespace, int)):
             try:
@@ -379,7 +378,7 @@ class NamespacesDict(Mapping):
     def __getattr__(self, attr: Namespace | int | str) -> Namespace:
         """Get the namespace with the given key.
 
-        :param attr: namespace key
+        :param attr: Namespace key
         """
         # lookup_name access _namespaces
         if attr.isupper():
@@ -423,13 +422,13 @@ class NamespacesDict(Mapping):
         Namespace.lookup_name successfully finds. A numerical string is
         resolved as an integer.
 
-        :param identifiers: namespace identifiers
-        :type identifiers: iterable of str or Namespace key, or a single
+        :param identifiers: Namespace identifiers
+        :type identifiers: Iterable of str or Namespace key, or a single
             instance of those types
-        :return: list of Namespace objects in the same order as the
+        :return: List of Namespace objects in the same order as the
             identifiers
-        :raises KeyError: a namespace identifier was not resolved
-        :raises TypeError: a namespace identifier has an inappropriate
+        :raises KeyError: A namespace identifier was not resolved
+        :raises TypeError: A namespace identifier has an inappropriate
             type such as NoneType or bool
         """
         if isinstance(identifiers, (str, Namespace)):

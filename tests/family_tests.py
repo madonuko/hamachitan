@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""Tests for the family module."""
 #
-# (C) Pywikibot team, 2014-2025
+# (C) Pywikibot team, 2014-2026
 #
 # Distributed under the terms of the MIT license.
 #
+"""Tests for the family module."""
 from __future__ import annotations
 
+import unittest
 from collections.abc import Mapping
 from contextlib import suppress
 
@@ -14,7 +15,7 @@ import pywikibot
 from pywikibot.exceptions import UnknownFamilyError
 from pywikibot.family import Family, SingleSiteFamily
 from pywikibot.tools import suppress_warnings
-from tests.aspects import PatchingTestCase, TestCase, unittest
+from tests.aspects import PatchingTestCase, TestCase
 from tests.utils import DrySite
 
 
@@ -31,9 +32,18 @@ class TestFamily(TestCase):
                 f = Family.load(name)
                 self.assertIsInstance(f.langs, dict)
                 self.assertTrue(f.langs)
-                self.assertTrue(f.codes)
-                self.assertTrue(iter(f.codes))
-                self.assertIsInstance(next(iter(f.codes)), str)
+
+                if name == 'wikinews':
+                    self.assertFalse(f.codes)
+                    self.assertTrue(f.closed_wikis)
+                    self.assertTrue(iter(f.closed_wikis))
+                    self.assertIsInstance(next(iter(f.closed_wikis)), str)
+                    self.assertIsInstance(f.closed_wikis, list)
+                else:
+                    self.assertTrue(f.codes)
+                    self.assertTrue(iter(f.codes))
+                    self.assertIsInstance(next(iter(f.codes)), str)
+
                 self.assertTrue(f.domains)
                 self.assertTrue(iter(f.domains))
                 for domain in f.domains:
@@ -136,12 +146,12 @@ class TestFamily(TestCase):
         family = Family.load('wikipedia')
         with self.assertRaisesRegex(
                 AttributeError,
-                "'mappingproxy' object has no attribute 'update'"):
+                "'<?mappingproxy.*' object has no attribute 'update'"):
             family.obsolete.update({})
 
         with self.assertRaisesRegex(
                 TypeError,
-                "'mappingproxy' object does not support item assignment"):
+                "'<?mappingproxy.*' object does not support item assignment"):
             family.obsolete['a'] = 'b'
 
         with self.assertRaisesRegex(

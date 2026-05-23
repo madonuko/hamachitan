@@ -1,9 +1,9 @@
-"""Base for terminal user interfaces."""
 #
-# (C) Pywikibot team, 2003-2025
+# (C) Pywikibot team, 2003-2026
 #
 # Distributed under the terms of the MIT license.
 #
+"""Base for terminal user interfaces."""
 from __future__ import annotations
 
 import getpass
@@ -11,17 +11,12 @@ import logging
 import re
 import sys
 import threading
+from collections.abc import Iterable, Sequence
 from typing import Any, Literal, NoReturn, TextIO
 
 import pywikibot
 from pywikibot import config
-from pywikibot.backports import (
-    Iterable,
-    RLock,
-    Sequence,
-    batched,
-    removeprefix,
-)
+from pywikibot.backports import RLock, batched
 from pywikibot.bot_choice import (
     ChoiceException,
     Option,
@@ -65,7 +60,7 @@ class UI(ABUIC):
 
     """Base for terminal user interfaces.
 
-    .. versionchanged:: 6.2:
+    .. version-changed:: 6.2:
        subclassed from
        :py:obj:`userinterfaces._interface_base.ABUIC`
     """
@@ -78,7 +73,7 @@ class UI(ABUIC):
         This caches the std-streams locally so any attempts to
         monkey-patch the streams later will not work.
 
-        .. versionchanged:: 7.1
+        .. version-changed:: 7.1
            memorize original streams
         """
         # for Windows GUI they can be None under some conditions
@@ -169,7 +164,7 @@ class UI(ABUIC):
         against the frozen streams, and then write to the (potentially
         redirected) `sys.stderr` or `sys.stdout` stream.
 
-        .. versionchanged:: 7.1
+        .. version-changed:: 7.1
            instead of writing to `target_stream`, dispatch to
            `sys.stderr` or `sys.stdout`.
         """
@@ -247,7 +242,7 @@ class UI(ABUIC):
         in cache. They will be printed with next unlocked output call or
         at termination time.
 
-        .. versionchanged:: 7.0
+        .. version-changed:: 7.0
            Forward text to cache and flush if output is not locked.
         """
         self.cache_output(text, targetStream=targetStream)
@@ -257,7 +252,7 @@ class UI(ABUIC):
     def flush(self) -> None:
         """Output cached text.
 
-        .. versionadded:: 7.0
+        .. version-added:: 7.0
         """
         with self.lock:
             for args, kwargs in self.cache:
@@ -267,7 +262,7 @@ class UI(ABUIC):
     def cache_output(self, *args, **kwargs) -> None:
         """Put text to cache.
 
-        .. versionadded:: 7.0
+        .. version-added:: 7.0
         """
         with self.lock:
             self.cache.append((args, kwargs))
@@ -279,7 +274,7 @@ class UI(ABUIC):
         terminal, it will be replaced with a question mark or by a
         transliteration.
 
-        .. versionadded:: 7.0
+        .. version-added:: 7.0
            ``UI.output()`` was renamed to ``UI.stream_output()``
         """
         if config.transliterate:
@@ -349,7 +344,7 @@ class UI(ABUIC):
         recognises a trailing question mark.
 
         :param question: The question, without trailing whitespace.
-        :param password: if True, hides the user's input (for password
+        :param password: If True, hides the user's input (for password
             entry).
         :param default: The default answer if none was entered. None to
             require an answer.
@@ -423,7 +418,7 @@ class UI(ABUIC):
         not be sensible when the option supports multiple values as
         it'll return an ambiguous index.
 
-        .. versionchanged:: 9.0
+        .. version-changed:: 9.0
            Raise ValueError if no *default* value is given with *force*;
            raise ValueError if *force* is True and *default* value is
            invalid; raise TypeError if *default* value is neither str
@@ -445,7 +440,7 @@ class UI(ABUIC):
         :return: If return_shortcut the shortcut of options or the value of
             default (if it's not None). Otherwise the index of the answer in
             options. If default is not a shortcut, it'll return -1.
-        :raises ValueError: invalid or no *default* value is given with
+        :raises ValueError: Invalid or no *default* value is given with
             *force* or no or an invalid option is given.
         :raises TypeError: *default* value is neither None nor str
         """
@@ -505,7 +500,7 @@ class UI(ABUIC):
                         if force:
                             raise ValueError(
                                 f'{default!r} is not a valid Option for '
-                                f'{removeprefix(output, question).lstrip()}')
+                                f'{output.removeprefix(question).lstrip()}')
 
         if isinstance(answer, ChoiceException):
             raise answer
@@ -560,11 +555,11 @@ class UI(ABUIC):
 
         Uses a Tkinter edit box because we don't have a console editor
 
-        :param text: the text to be edited
-        :param jumpIndex: position at which to put the caret
-        :param highlight: each occurrence of this substring will be
+        :param text: The text to be edited
+        :param jumpIndex: Position at which to put the caret
+        :param highlight: Each occurrence of this substring will be
             highlighted
-        :return: the modified text, or None if the user didn't save the
+        :return: The modified text, or None if the user didn't save the
             text file in his text editor
         """
         try:

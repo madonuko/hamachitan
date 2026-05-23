@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+#
+# (C) Pywikibot team, 2007-2026
+#
+# Distributed under the terms of the MIT license.
+#
 """Help sysops to quickly check and/or delete pages listed for speedy deletion.
 
 This bot trawls through candidates for speedy deletion in a fast
@@ -20,11 +25,6 @@ it just to the first so many bytes.
 
 .. note:: This script currently only works for the Wikipedia project.
 """
-#
-# (C) Pywikibot team, 2007-2024
-#
-# Distributed under the terms of the MIT license.
-#
 from __future__ import annotations
 
 import time
@@ -192,14 +192,6 @@ class SpeedyBot(SingleSiteBot, ExistingPageBot):
                 'roughtranslation': 'mactra',
             },
         },
-        'wikinews': {
-            'en': {
-                '_default': '[[WN:CSD]]',
-            },
-            'zh': {
-                '_default': '[[WN:CSD]]',
-            },
-        },
     }
 
     #: Default reason for deleting a talk page.
@@ -218,10 +210,6 @@ class SpeedyBot(SingleSiteBot, ExistingPageBot):
             'pt': 'Página de discussão órfã',
             'zh': '[[WP:CSD#O1|CSD O1 O2 O6]] 沒有在使用的討論頁',
         },
-        'wikinews': {
-            'en': 'Orphaned talk page',
-            'zh': '[[WN:CSD#O1|CSD O1 O2 O6]] 沒有在使用的討論頁',
-        }
     }
 
     #: A list of often-used reasons for deletion. Shortcuts are keys, and
@@ -447,13 +435,15 @@ class SpeedyBot(SingleSiteBot, ExistingPageBot):
         elif choice == 'u':
             pywikibot.info('Updating from CSD category.')
             self.saved_progress = page.title()
-            self.stop()
+            self.generator.close()
 
         # delete the current page
         elif choice == 'd':
             reason = self.get_reason_for_deletion(page)
             pywikibot.info(f'The chosen reason is: <<lightred>>{reason}')
-            page.delete(reason, prompt=False)
+            # don't produce orphaned talk pages
+            deletetalk = not page.isTalkPage() and page.namespace() != 2
+            page.delete(reason, prompt=False, deletetalk=deletetalk)
 
         # skip this page
         else:
@@ -463,9 +453,6 @@ class SpeedyBot(SingleSiteBot, ExistingPageBot):
         """Refresh generator."""
         generator = pagegenerators.CategorizedPageGenerator(
             self.csd_cat, start=self.saved_progress)
-        # wrap another generator around it so that we won't produce orphaned
-        # talk pages.
-        generator = pagegenerators.PageWithTalkPageGenerator(generator)
         self.generator = pagegenerators.PreloadingGenerator(generator,
                                                             groupsize=20)
         self.saved_progress = None

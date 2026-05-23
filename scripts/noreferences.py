@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+#
+# (C) Pywikibot team, 2007-2026
+#
+# Distributed under the terms of the MIT license.
+#
 """This script adds a missing references section to pages.
 
 It goes over multiple pages, searches for pages where <references />
@@ -27,11 +32,6 @@ namespace (using the -start) parameter, as that would consume too much
 bandwidth. Instead, use the -xml parameter, or use another way to generate
 a list of affected articles
 """
-#
-# (C) Pywikibot team, 2007-2025
-#
-# Distributed under the terms of the MIT license.
-#
 from __future__ import annotations
 
 import re
@@ -236,6 +236,12 @@ placeBeforeSections = {
         'ดูเพิ่ม',
         'หมายเหตุ',
     ],
+    'uk': [
+        'Література',
+        'Посилання',
+        'Зовнішні посилання',
+        'Джерела',
+    ],
     'ur': [              # no explicit policy on where to put the references
         'مزید دیکھیے',
         'حوالہ جات',
@@ -253,7 +259,7 @@ PLACE_AFTER_SECTIONS: dict[str, list[str]]
 """References sections can also be placed after a given section. This
 dictionary defines these sections, sorted by priority. For example, on Simple
 wiki, the script would place the "References" section after the "Notes"
-section, if that existed. The PLACE_AFTER_SECTIONS is priorized over the
+section, if that existed. The PLACE_AFTER_SECTIONS is prioritized over the
 placing of the "placeBeforeSections" sections.
 
 .. attention:: not implemented yet.
@@ -434,6 +440,10 @@ referencesSections = {
             'เชิงอรรถ',
             'หมายเหตุ',
         ],
+        'uk': [
+            'Примітки',
+            'Виноски',
+        ],
         'ur': [
             'حوالہ جات',
             'حوالہ',
@@ -509,6 +519,8 @@ referencesTemplates = {
         'sr': ['Reflist', 'Референце', 'Извори', 'Рефлист'],
         'szl': ['Przipisy', 'Připisy'],
         'th': ['รายการอ้างอิง'],
+        'uk': ['Reflist', 'References', 'Примітки', 'Зноски', 'Виноски',
+               'Ref-list', 'Примечания', 'Przypisy', 'Reflist+'],
         'ur': ['Reflist', 'Refs', 'Reference',
                'حوالہ جات', 'حوالے'],
         'zh': ['Reflist', 'RefFoot', 'NoteFoot'],
@@ -543,6 +555,7 @@ referencesSubstitute = {
         'sr': '{{reflist}}',
         'szl': '{{Przipisy}}',
         'th': '{{รายการอ้างอิง}}',
+        'uk': '{{Reflist}}',
         'ur': '{{حوالہ جات}}',
         'zh': '{{reflist}}',
     },
@@ -655,7 +668,7 @@ class NoReferencesBot(AutomaticTWSummaryBot, SingleSiteBot, ExistingPageBot):
         # Set the edit summary key for this case
         self.summary_key = 'noreferences-add-tag'
         for section in i18n.translate(self.site, referencesSections) or []:
-            sectionR = re.compile(fr'\r?\n=+ *{section} *=+ *\r?\n')
+            sectionR = re.compile(fr'\r?\n=+ *{section} *=+ *(?=\r?\n|$)')
             index = 0
             while index < len(oldText):
                 match = sectionR.search(oldText, index)
@@ -665,16 +678,17 @@ class NoReferencesBot(AutomaticTWSummaryBot, SingleSiteBot, ExistingPageBot):
                                        f'commented out, skipping.')
                         index = match.end()
                     else:
-                        pywikibot.info(f'Adding references tag to existing'
+                        pywikibot.info(f'Adding references tag to existing '
                                        f'{section} section...\n')
                         templates_or_comments = re.compile(
                             r'^((?:\s*(?:\{\{[^\{\}]*?\}\}|<!--.*?-->))*)',
                             flags=re.DOTALL)
                         return (
-                            oldText[:match.end() - 1]
+                            oldText[:match.end()]
                             + templates_or_comments.sub(
                                 fr'\1\n{self.referencesText}\n',
-                                oldText[match.end() - 1:])
+                                oldText[match.end():]
+                            )
                         )
                 else:
                     break
@@ -750,7 +764,7 @@ class NoReferencesBot(AutomaticTWSummaryBot, SingleSiteBot, ExistingPageBot):
                                ident: str = '==') -> str:
         """Create a reference section and insert it into the given text.
 
-        .. versionchanged:: 9.1
+        .. version-changed:: 9.1
            raise :exc:`exceptions.TranslationError` if script is not
            localized for the current site.
 
@@ -789,7 +803,7 @@ class NoReferencesBot(AutomaticTWSummaryBot, SingleSiteBot, ExistingPageBot):
     def treat_page(self) -> None:
         """Run the bot.
 
-        .. versionchanged:: 9.1
+        .. version-changed:: 9.1
            print error message and close :attr:`bot.BaseBot.generator`
            if :exc:`exceptions.TranslationError` was raised.
         """

@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
-r"""Append text to the top or bottom of a page.
+#
+# (C) Pywikibot team, 2007-2026
+#
+# Distributed under the terms of the MIT license.
+#
+"""Append text to the top or bottom of a page.
 
 By default this adds the text to the bottom above the categories and
 interwiki.
 
 Use the following command line parameters to specify what to add:
 
--text        [str] Text to append. "\n" are interpreted as newlines.
+-text        [str] Text to append. ``\\n`` are interpreted as newlines.
 
 -textfile    [str] Path to a file with text to append
 
@@ -51,30 +56,25 @@ Add a template to the top of the pages with 'category:catname':
 .. code-block:: batch
 
    python pwb.py add_text -cat:catname -summary:"Bot: Adding a template"
-   -text:"{{Something}}" -except:"\{\{([Tt]emplate:|)[Ss]omething" -up
+   -text:"{{Something}}" -except:"\\{\\{([Tt]emplate:|)[Ss]omething" -up
 
 Command used on it.wikipedia to put the template in the page without any
 category:
 
 .. code-block:: batch
 
-   python pwb.py add_text -except:"\{\{([Tt]emplate:|)[Cc]ategorizzare"
+   python pwb.py add_text -except:"\\{\\{([Tt]emplate:|)[Cc]ategorizzare"
    -text:"{{Categorizzare}}" -excepturl:"class='catlinks'>" -uncat
    -summary:"Bot: Aggiungo template Categorizzare"
 """
-#
-# (C) Pywikibot team, 2007-2025
-#
-# Distributed under the terms of the MIT license.
-#
 from __future__ import annotations
 
 import re
+from collections.abc import Sequence
 from pathlib import Path
 
 import pywikibot
 from pywikibot import config, pagegenerators, textlib
-from pywikibot.backports import Sequence
 from pywikibot.bot import AutomaticTWSummaryBot, ExistingPageBot
 
 
@@ -132,7 +132,7 @@ class AddTextBot(AutomaticTWSummaryBot, ExistingPageBot):
             self.generator = pagegenerators.PageWithTalkPageGenerator(
                 self.generator, return_talk_only=True)
 
-    def skip_page(self, page):
+    def skip_page(self, page: pywikibot.Page) -> bool:
         """Skip if -exceptUrl matches or page does not exists."""
         if page.exists():
             if self.opt.createonly:

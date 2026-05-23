@@ -1,14 +1,15 @@
-"""Objects representing a base object for a MediaWiki page."""
 #
-# (C) Pywikibot team, 2008-2025
+# (C) Pywikibot team, 2008-2026
 #
 # Distributed under the terms of the MIT license.
 #
+"""Objects representing a base object for a MediaWiki page."""
 from __future__ import annotations
 
 import itertools
 import re
 from collections import Counter
+from collections.abc import Generator, Iterable
 from contextlib import suppress
 from itertools import islice
 from textwrap import shorten, wrap
@@ -18,7 +19,7 @@ from warnings import warn
 
 import pywikibot
 from pywikibot import Timestamp, config, date, i18n, textlib, tools
-from pywikibot.backports import Generator, Iterable, NoneType
+from pywikibot.backports import NoneType
 from pywikibot.cosmetic_changes import CANCEL, CosmeticChangesToolkit
 from pywikibot.exceptions import (
     Error,
@@ -76,7 +77,7 @@ class BasePage(ComparableMixin):
         '_timestamp',
     )
 
-    def __init__(self, source, title: str = '', ns=0) -> None:
+    def __init__(self, source, title: str = '', ns: int = 0) -> None:
         """Instantiate a Page object.
 
         Three calling formats are supported:
@@ -97,15 +98,13 @@ class BasePage(ComparableMixin):
             This is the preferred syntax when using a title scraped from
             wikitext, URLs, or another non-normalized source.
 
-        :param source: the source of the page
+        :param source: The source of the page
         :type source: pywikibot.page.BaseLink (or subclass),
             pywikibot.page.Page (or subclass), or pywikibot.page.Site
-        :param title: normalized title of the page; required if source is a
+        :param title: Normalized title of the page; required if source is a
             Site, ignored otherwise
-        :type title: str
-        :param ns: namespace number; required if source is a Site, ignored
+        :param ns: Namespace number; required if source is a Site, ignored
             otherwise
-        :type ns: int
         """
         if title is None:
             raise ValueError('Title cannot be None.')
@@ -160,7 +159,7 @@ class BasePage(ComparableMixin):
     def namespace(self) -> Namespace:
         """Return the namespace of the page.
 
-        :return: namespace of the page
+        :return: Namespace of the page
         """
         return self._link.namespace
 
@@ -189,7 +188,7 @@ class BasePage(ComparableMixin):
     def pageid(self) -> int:
         """Return pageid of the page.
 
-        :return: pageid or 0 if page does not exist
+        :return: Page id or 0 if page does not exist
         """
         if not hasattr(self, '_pageid'):
             self.site.loadpageinfo(self)
@@ -212,29 +211,31 @@ class BasePage(ComparableMixin):
     ) -> str:
         """Return the title of this Page, as a string.
 
-        :param underscore: (not used with as_link) if true, replace all ' '
-            characters with '_'
-        :param with_ns: if false, omit the namespace prefix. If this
-            option is false and used together with as_link return a labeled
-            link like [[link|label]]
-        :param with_section: if false, omit the section
-        :param as_url: (not used with as_link) if true, quote title as if in an
-            URL
-        :param as_link: if true, return the title in the form of a wikilink
-        :param allow_interwiki: (only used if as_link is true) if true, format
-            the link as an interwiki link if necessary
-        :param force_interwiki: (only used if as_link is true) if true, always
-            format the link as an interwiki link
-        :param textlink: (only used if as_link is true) if true, place a ':'
-            before Category: and Image: links
-        :param as_filename: (not used with as_link) if true, replace any
-            characters that are unsafe in filenames
-        :param insite: (only used if as_link is true) a site object where the
-            title is to be shown. Default is the current family/lang given by
-            -family and -lang or -site option i.e. config.family and
-            config.mylang
-        :param without_brackets: (cannot be used with as_link) if true, remove
-            the last pair of brackets(usually removes disambiguation brackets).
+        :param underscore: Not used with *as_link*, If true, replace all
+            spaces with underscores.
+        :param with_ns: If false, omit the namespace prefix. If this
+            option is False and used together with *as_link* return a
+            labeled link like ``[[link|label]]``.
+        :param with_section: If false, omit the section.
+        :param as_url: Not used with *as_link*, If true, quote title as
+            if in an URL.
+        :param as_link: If true, return the title in the form of a
+            wikilink.
+        :param allow_interwiki: Only used if *as_link* is true, If true,
+            format the link as an interwiki link if necessary.
+        :param force_interwiki: Only used if *as_link* is true, If true,
+            always format the link as an interwiki link.
+        :param textlink: Only used if *as_link* is true, If true, place
+            a ':' before ``Category:`` and ``Image:`` links.
+        :param as_filename: Not used with *as_link*, If true, replace
+            any characters that are unsafe in filenames.
+        :param insite: Only used if *as_link* is true, a site object
+            where the title is to be shown. Default is the current
+            family/code given by ``-family`` and ``-code`` or ``-site``
+            option i.e. config.family and config.mylang.
+        :param without_brackets: Cannot be used with *as_link*, If true,
+            remove the last pair of brackets (usually removes
+            disambiguation brackets)
         """
         title = self._link.canonical_title()
         label = self._link.title
@@ -362,13 +363,13 @@ class BasePage(ComparableMixin):
          ...
         pywikibot.exceptions.IsRedirectPageError: ... is a redirect page.
 
-        .. versionchanged:: 9.2
+        .. version-changed:: 9.2
            :exc:`exceptions.SectionError` is raised if the
            :meth:`section` does not exists
         .. seealso:: :attr:`text` property
 
-        :param force: reload all page attributes, including errors.
-        :param get_redirect: return the redirect text, do not follow the
+        :param force: Reload all page attributes, including errors.
+        :param get_redirect: Return the redirect text, do not follow the
             redirect, do not raise an exception.
         :raises NoPageError: The page does not exist.
         :raises IsRedirectPageError: The page is a redirect.
@@ -402,7 +403,7 @@ class BasePage(ComparableMixin):
 
         Not existing pages are considered loaded.
 
-        .. versionadded:: 7.6
+        .. version-added:: 7.6
         """
         return not self.exists() or self._latest_cached_revision() is not None
 
@@ -442,12 +443,12 @@ class BasePage(ComparableMixin):
     ) -> pywikibot.page.Revision:
         """Return an old revision of this page.
 
-        .. versionadded:: 9.6
+        .. version-added:: 9.6
         .. seealso:: :meth:`getOldVersion`
 
 
         :param oldid: The revid of the revision desired.
-        :param content: if True, retrieve the content of the revision
+        :param content: If True, retrieve the content of the revision
             (default False)
         """
         if force or oldid not in self._revisions \
@@ -458,7 +459,7 @@ class BasePage(ComparableMixin):
     def getOldVersion(self, oldid, force: bool = False) -> str:
         """Return text of an old revision of this page.
 
-        .. versionchanged:: 10.0
+        .. version-changed:: 10.0
            The unused parameter *get_redirect* was removed.
         .. seealso:: :meth:`get_revision`
 
@@ -471,9 +472,9 @@ class BasePage(ComparableMixin):
         """Return the permalink URL of an old revision of this page.
 
         :param oldid: The revid of the revision desired.
-        :param percent_encoded: if false, the link will be provided
+        :param percent_encoded: If false, the link will be provided
             without title uncoded.
-        :param with_protocol: if true, http or https prefixes will be
+        :param with_protocol: If true, http or https prefixes will be
             included before the double slash.
         """
         if percent_encoded:
@@ -571,7 +572,7 @@ class BasePage(ComparableMixin):
 
         To save the modified text :meth:`save` is one possible method.
 
-        :return: text of the page
+        :return: Text of the page
         """
         if hasattr(self, '_text') and self._text is not None:
             return self._text
@@ -623,15 +624,15 @@ class BasePage(ComparableMixin):
     def get_parsed_page(self, force: bool = False) -> str:
         """Retrieve parsed text (via action=parse) and cache it.
 
-        .. versionchanged:: 7.1
+        .. version-changed:: 7.1
            `force` parameter was added;
            `_get_parsed_page` becomes a public method
-
-        :param force: force updating from the live site
 
         .. seealso::
            :meth:`APISite.get_parsed_page()
            <pywikibot.site._apisite.APISite.get_parsed_page>`
+
+        :param force: Force updating from the live site
         """
         if not hasattr(self, '_parsed_text') or force:
             self._parsed_text = self.site.get_parsed_page(self)
@@ -644,27 +645,27 @@ class BasePage(ComparableMixin):
                 intro: bool = True) -> str:
         """Retrieve an extract of this page.
 
-        .. versionadded:: 7.1
+        .. version-added:: 7.1
+
+        .. seealso:: :meth:`APISite.extract()
+           <pywikibot.site._extensions.TextExtractsMixin.extract>`.
 
         :param variant: The variant of extract, either 'plain' for plain
             text, 'html' for limited HTML (both excludes templates and
             any text formatting) or 'wiki' for bare wikitext which also
             includes any templates for example.
-        :param lines: if not None, wrap the extract into lines with
+        :param lines: If not None, wrap the extract into lines with
             width of 79 chars and return a string with that given number
             of lines.
         :param chars: How many characters to return.  Actual text
             returned might be slightly longer.
-        :param sentences: How many sentences to return
-        :param intro: Return only content before the first section
-        :raises NoPageError: given page does not exist
+        :param sentences: How many sentences to return.
+        :param intro: Return only content before the first section.
+        :raises NoPageError: Given page does not exist.
         :raises NotImplementedError: "wiki" variant does not support
             `sentences` parameter.
         :raises ValueError: `variant` parameter must be "plain", "html" or
-            "wiki"
-
-        .. seealso:: :meth:`APISite.extract()
-           <pywikibot.site._extensions.TextExtractsMixin.extract>`.
+            "wiki".
         """
         if variant in ('plain', 'html'):
             extract = self.site.extract(self, chars=chars, sentences=sentences,
@@ -704,7 +705,7 @@ class BasePage(ComparableMixin):
     def properties(self, force: bool = False) -> dict:
         """Return the properties of the page.
 
-        :param force: force updating from the live site
+        :param force: Force updating from the live site
         """
         if not hasattr(self, '_pageprops') or force:
             self._pageprops = {}  # page may not have pageprops (see T56868)
@@ -714,7 +715,7 @@ class BasePage(ComparableMixin):
     def defaultsort(self, force: bool = False) -> str | None:
         """Extract value of the {{DEFAULTSORT:}} magic word from the page.
 
-        :param force: force updating from the live site
+        :param force: Force updating from the live site
         """
         return self.properties(force=force).get('defaultsort')
 
@@ -725,7 +726,7 @@ class BasePage(ComparableMixin):
     ) -> str:
         """Return the page text with all templates and parser words expanded.
 
-        :param force: force updating from the live site
+        :param force: Force updating from the live site
         :param includecomments: Also strip comments if includecomments
             parameter is not True.
         """
@@ -745,7 +746,7 @@ class BasePage(ComparableMixin):
     def userName(self) -> str:
         """Return name or IP address of last user to edit page.
 
-        .. deprecated:: 9.3
+        .. version-deprecated:: 9.3
            Use :attr:`latest_revision.user<latest_revision>`
            instead.
         """
@@ -755,7 +756,7 @@ class BasePage(ComparableMixin):
     def isIpEdit(self) -> bool:
         """Return True if last editor was unregistered.
 
-        .. deprecated:: 9.3
+        .. version-deprecated:: 9.3
            Use :attr:`latest_revision.anon<latest_revision>`
            instead.
         """
@@ -778,16 +779,6 @@ class BasePage(ComparableMixin):
                 return entry.user
 
         return None
-
-    @deprecated('latest_revision.timestamp', since='8.0.0')
-    def editTime(self) -> pywikibot.Timestamp:
-        """Return timestamp of last revision to page.
-
-        .. deprecated:: 8.0
-           Use :attr:`latest_revision.timestamp<latest_revision>`
-           instead.
-        """
-        return self.latest_revision.timestamp  # type: ignore[attr-defined]
 
     def exists(self) -> bool:
         """Return True if page exists on the wiki, even if it's a redirect.
@@ -826,7 +817,7 @@ class BasePage(ComparableMixin):
         A static redirect must be a valid redirect, and contain the magic
         word __STATICREDIRECT__.
 
-        .. versionchanged:: 7.0
+        .. version-changed:: 7.0
            __STATICREDIRECT__ can be transcluded
 
         :param force: Bypass local caching
@@ -988,16 +979,16 @@ class BasePage(ComparableMixin):
         If you need a full list of referring pages, use
         ``pages = list(s.getReferences())``
 
-        :param follow_redirects: if True, also iterate pages that link to a
+        :param follow_redirects: If True, also iterate pages that link to a
             redirect pointing to the page.
-        :param with_template_inclusion: if True, also iterate pages where self
+        :param with_template_inclusion: If True, also iterate pages where self
             is used as a template.
-        :param only_template_inclusion: if True, only iterate pages where self
+        :param only_template_inclusion: If True, only iterate pages where self
             is used as a template.
-        :param filter_redirects: if True, only iterate redirects to self.
-        :param namespaces: only iterate pages in these namespaces
-        :param total: iterate no more than this number of pages in total
-        :param content: if True, retrieve the content of the current version
+        :param filter_redirects: If True, only iterate redirects to self.
+        :param namespaces: Only iterate pages in these namespaces
+        :param total: Iterate no more than this number of pages in total
+        :param content: If True, retrieve the content of the current version
             of each referring page (default False)
         """
         # N.B.: this method intentionally overlaps with backlinks() and
@@ -1024,13 +1015,13 @@ class BasePage(ComparableMixin):
                   content: bool = False) -> Iterable[pywikibot.Page]:
         """Return an iterator for pages that link to this page.
 
-        :param follow_redirects: if True, also iterate pages that link
+        :param follow_redirects: If True, also iterate pages that link
             to a redirect pointing to the page.
-        :param filter_redirects: if True, only iterate redirects; if
+        :param filter_redirects: If True, only iterate redirects; if
             False, omit redirects; if None, do not filter
-        :param namespaces: only iterate pages in these namespaces
-        :param total: iterate no more than this number of pages in total
-        :param content: if True, retrieve the content of the current
+        :param namespaces: Only iterate pages in these namespaces
+        :param total: Iterate no more than this number of pages in total
+        :param content: If True, retrieve the content of the current
             version of each referring page (default False)
         """
         return self.site.pagebacklinks(
@@ -1049,11 +1040,11 @@ class BasePage(ComparableMixin):
                    content: bool = False) -> Iterable[pywikibot.Page]:
         """Return an iterator for pages that embed this page as a template.
 
-        :param filter_redirects: if True, only iterate redirects; if
+        :param filter_redirects: If True, only iterate redirects; if
             False, omit redirects; if None, do not filter
-        :param namespaces: only iterate pages in these namespaces
-        :param total: iterate no more than this number of pages in total
-        :param content: if True, retrieve the content of the current
+        :param namespaces: Only iterate pages in these namespaces
+        :param total: Iterate no more than this number of pages in total
+        :param content: If True, retrieve the content of the current
             version of each embedding page (default False)
         """
         return self.site.page_embeddedin(
@@ -1074,14 +1065,14 @@ class BasePage(ComparableMixin):
     ) -> Iterable[pywikibot.Page]:
         """Return an iterable of redirects to this page.
 
-        :param filter_fragments: If True, only return redirects with fragments.
-            If False, only return redirects without fragments. If None, return
-            both (no filtering).
-        :param namespaces: only return redirects from these namespaces
-        :param total: maximum number of redirects to retrieve in total
-        :param content: load the current content of each redirect
+        .. version-added:: 7.0
 
-        .. versionadded:: 7.0
+        :param filter_fragments: If True, only return redirects with
+            fragments. If False, only return redirects without fragments.
+            If None, return both (no filtering).
+        :param namespaces: Only return redirects from these namespaces
+        :param total: Maximum number of redirects to retrieve in total
+        :param content: Load the current content of each redirect
         """
         return self.site.page_redirects(
             self,
@@ -1147,9 +1138,9 @@ class BasePage(ComparableMixin):
            <pywikibot.site._apisite.APISite.page_can_be_edited>`
 
 
-        :param action: a valid restriction type like 'edit', 'move';
+        :param action: A valid restriction type like 'edit', 'move';
             default is ``edit``.
-        :raises ValueError: invalid action parameter
+        :raises ValueError: Invalid action parameter
         """
         return self.site.page_can_be_edited(self, action)
 
@@ -1165,8 +1156,8 @@ class BasePage(ComparableMixin):
 
         The framework enforces this restriction by default. It is
         possible to override this by setting ignore_bot_templates=True
-        in user cnfig file (user-config.py), or using
-        page.put(force=True).
+        in user config file (user-config.py), or using
+        :code:`page.put(force=True)`.
         """
         if not hasattr(self, '_bot_may_edit'):
             self._bot_may_edit = self._check_bot_may_edit()
@@ -1287,15 +1278,15 @@ class BasePage(ComparableMixin):
              **kwargs) -> None:
         """Save the current contents of page's text to the wiki.
 
-        .. versionchanged:: 7.0
+        .. version-changed:: 7.0
            boolean *watch* parameter is deprecated
-        .. versionchanged:: 9.3
+        .. version-changed:: 9.3
            *botflag* parameter was renamed to *bot*.
-        .. versionchanged:: 9.4
+        .. version-changed:: 9.4
            edits cannot be marked as bot edits if the bot account has no
            ``bot`` right. Therefore a ``None`` argument for *bot*
            parameter was dropped.
-        .. versionchanged:: 10.0
+        .. version-changed:: 10.0
            boolean *watch* parameter is desupported
 
         .. hint:: Setting up :manpage:`OAuth` or :manpage:`BotPassword
@@ -1320,13 +1311,13 @@ class BasePage(ComparableMixin):
             * nochange --- don't change the watchlist
 
             If None (default), follow bot account's default settings
-        :param minor: if True, mark this edit as minor
-        :param bot: if True, mark this edit as made by a bot if user has
+        :param minor: If True, mark this edit as minor
+        :param bot: If True, mark this edit as made by a bot if user has
             ``bot`` right (default), if False do not mark it as bot edit.
-        :param force: if True, ignore botMayEdit() setting
-        :param asynchronous: if True, launch a separate thread to save
+        :param force: If True, ignore botMayEdit() setting
+        :param asynchronous: If True, launch a separate thread to save
             asynchronously
-        :param callback: a callable object that will be called after the
+        :param callback: A callable object that will be called after the
             page put operation. This object must take two arguments: (1)
             a Page object, and (2) an exception instance, which will be
             None if the page was saved successfully. The callback is
@@ -1334,10 +1325,10 @@ class BasePage(ComparableMixin):
             saves were successful.
         :param apply_cosmetic_changes: Overwrites the cosmetic_changes
             configuration value to this value unless it's None.
-        :param quiet: enable/disable successful save operation message;
+        :param quiet: Enable/disable successful save operation message;
             defaults to False. In asynchronous mode, if True, it is up
             to the calling bot to manage the output e.g. via callback.
-        :raises TypeError: watch parameter must be a string literal or
+        :raises TypeError: Watch parameter must be a string literal or
             None
         :raises OtherPageSaveError: Editing restricted by a template.
         """
@@ -1435,11 +1426,11 @@ class BasePage(ComparableMixin):
         For new code, using :meth:`save` is preferred; also ee that
         method docs for all parameters not listed here.
 
-        .. versionadded:: 7.0
+        .. version-added:: 7.0
            The `show_diff` parameter
-        .. versionchanged:: 9.3
+        .. version-changed:: 9.3
            *botflag* parameter was renamed to *bot*.
-        .. versionchanged:: 9.4
+        .. version-changed:: 9.4
            edits cannot be marked as bot edits if the bot account has no
            ``bot`` right. Therefore a ``None`` argument for *bot*
            parameter was dropped.
@@ -1447,7 +1438,7 @@ class BasePage(ComparableMixin):
         .. seealso:: :meth:`save`
 
         :param newtext: The complete text of the revised page.
-        :param show_diff: show changes between oldtext and newtext
+        :param show_diff: Show changes between oldtext and newtext
             (default: False)
         """
         if show_diff:
@@ -1466,7 +1457,7 @@ class BasePage(ComparableMixin):
     ) -> bool:
         """Add or remove this page from the bot account's watchlist.
 
-        .. versionchanged:: 10.4.0
+        .. version-changed:: 10.4.0
            Added the *expiry* parameter to specify watch expiry time.
            Positional parameters are deprecated; all parameters must be
            passed as keyword arguments.
@@ -1488,7 +1479,7 @@ class BasePage(ComparableMixin):
         :return: True if successful, False otherwise.
         :raises APIError: badexpiry: Invalid value for expiry parameter
         :raises KeyError: 'watch' isn't in API response
-        :raises TypeError: unexpected keyword argument
+        :raises TypeError: Unexpected keyword argument
         """
         return self.site.watch(self, unwatch=unwatch, expiry=expiry)
 
@@ -1502,18 +1493,14 @@ class BasePage(ComparableMixin):
     def purge(self, **kwargs) -> bool:
         """Purge the server's cache for this page.
 
-        :keyword redirects: Automatically resolve redirects.
-        :type redirects: bool
-        :keyword converttitles: Convert titles to other variants if
+        :keyword bool redirects: Automatically resolve redirects.
+        :keyword bool converttitles: Convert titles to other variants if
             necessary. Only works if the wiki's content language
             supports variant conversion.
-        :type converttitles: bool
-        :keyword forcelinkupdate: Update the links tables.
-        :type forcelinkupdate: bool
-        :keyword forcerecursivelinkupdate: Update the links table, and
-            update the links tables for any page that uses this page as
-            a template.
-        :type forcerecursivelinkupdate: bool
+        :keyword bool forcelinkupdate: Update the links tables.
+        :keyword bool forcerecursivelinkupdate: Update the links table,
+            and update the links tables for any page that uses this page
+            as a template.
         """
         self.clear_cache()
         return self.site.purgepages([self], **kwargs)
@@ -1533,7 +1520,7 @@ class BasePage(ComparableMixin):
 
         .. note:: This discards content saved to self.text.
 
-        .. versionchanged:: 9.2
+        .. version-changed:: 9.2
            *botflag* parameter was renamed to *bot*.
         """
         if not self.exists():
@@ -1549,7 +1536,7 @@ class BasePage(ComparableMixin):
     def linkedPages(
         self,
         **kwargs
-    ) -> Generator[pywikibot.page.BasePage, None, None]:
+    ) -> Generator[pywikibot.page.BasePage]:
         """Iterate Pages that this Page links to.
 
         Only returns pages from "normal" internal links. Embedded
@@ -1559,9 +1546,9 @@ class BasePage(ComparableMixin):
         For the parameters refer
         :py:mod:`APISite.pagelinks<pywikibot.site.APISite.pagelinks>`
 
-        .. versionadded:: 7.0
+        .. version-added:: 7.0
            the `follow_redirects` keyword argument.
-        .. versionremoved:: 10.0
+        .. version-removed:: 10.0
            the positional arguments.
 
         .. seealso::
@@ -1571,14 +1558,14 @@ class BasePage(ComparableMixin):
 
         :keyword namespaces: Only iterate pages in these namespaces
             (default: all)
-        :type namespaces: iterable of str or Namespace key,
+        :type namespaces: Iterable of str or Namespace key,
             or a single instance of those types. May be a '|' separated
             list of namespace identifiers.
-        :keyword bool follow_redirects: if True, yields the target of
+        :keyword bool follow_redirects: If True, yields the target of
             any redirects, rather than the redirect page
-        :keyword int total: iterate no more than this number of pages in
+        :keyword int total: Iterate no more than this number of pages in
             total
-        :keyword bool content: if True, load the current content of each
+        :keyword bool content: If True, load the current content of each
             page
         """
         return self.site.pagelinks(self, **kwargs)
@@ -1586,13 +1573,13 @@ class BasePage(ComparableMixin):
     def interwiki(
         self,
         expand: bool = True,
-    ) -> Generator[pywikibot.page.Link, None, None]:
+    ) -> Generator[pywikibot.page.Link]:
         """Yield interwiki links in the page text, excluding language links.
 
-        :param expand: if True (default), include interwiki links found
+        :param expand: If True (default), include interwiki links found
             in templates transcluded onto this page; if False, only
             iterate interwiki links found in this page's own wikitext
-        :return: a generator that yields Link objects
+        :return: A generator that yields Link objects
         """
         # This function does not exist in the API, so it has to be
         # implemented by screen-scraping
@@ -1620,9 +1607,9 @@ class BasePage(ComparableMixin):
     ) -> list[pywikibot.Link]:
         """Return a list of all inter-language Links on this page.
 
-        :param include_obsolete: if true, return even Link objects whose
+        :param include_obsolete: If true, return even Link objects whose
             site is obsolete
-        :return: list of Link objects.
+        :return: List of Link objects.
         """
         # Note: We preload a list of *all* langlinks, including links to
         # obsolete sites, and store that in self._langlinks. We then filter
@@ -1642,17 +1629,15 @@ class BasePage(ComparableMixin):
     ) -> Iterable[pywikibot.Link]:
         """Iterate all inter-language links on this page.
 
-        :param total: iterate no more than this number of pages in total
-        :param include_obsolete: if true, yield even Link object whose
+        :param total: Iterate no more than this number of pages in total
+        :param include_obsolete: If true, yield even Link object whose
             site is obsolete
-        :return: a generator that yields Link objects.
+        :return: A generator that yields Link objects.
         """
         if hasattr(self, '_langlinks'):
-            return iter(self.langlinks(include_obsolete=include_obsolete))
-        # FIXME: We might want to fill _langlinks when the Site
-        # method is called. If we do this, we'll have to think
-        # about what will happen if the generator is not completely
-        # iterated upon.
+            return islice(self.langlinks(include_obsolete=include_obsolete),
+                          total)
+
         return self.site.pagelanglinks(self, total=total,
                                        include_obsolete=include_obsolete)
 
@@ -1672,19 +1657,19 @@ class BasePage(ComparableMixin):
         method caches the result. If *namespaces* is used, all pages are
         retrieved and cached but the result is filtered.
 
-        .. versionchanged:: 2.0
+        .. version-changed:: 2.0
            a list of :class:`pywikibot.Page` is returned instead of a
            list of template titles. The given pages may have namespaces
            different from TEMPLATE namespace. *get_redirect* parameter
            was removed.
-        .. versionchanged:: 9.2
+        .. version-changed:: 9.2
            *namespaces* parameter was added; all parameters must be given
            as keyword arguments.
 
         .. seealso::
            - :meth:`itertemplates`
 
-        :param content: if True, retrieve the content of the current version
+        :param content: If True, retrieve the content of the current version
             of each template (default False)
         :param namespaces: Only iterate pages in these namespaces
         """
@@ -1720,8 +1705,8 @@ class BasePage(ComparableMixin):
         but they can be yielded from the cache of a previous
         :meth:`templates` call.
 
-        .. versionadded:: 2.0
-        .. versionchanged:: 9.2
+        .. version-added:: 2.0
+        .. version-changed:: 9.2
            *namespaces* parameter was added; all parameters except
            *total* must be given as keyword arguments.
 
@@ -1731,8 +1716,8 @@ class BasePage(ComparableMixin):
            - :meth:`templates`
            - :meth:`getReferences`
 
-        :param total: iterate no more than this number of pages in total
-        :param content: if True, retrieve the content of the current version
+        :param total: Iterate no more than this number of pages in total
+        :param content: If True, retrieve the content of the current version
             of each template (default False)
         :param namespaces: Only iterate pages in these namespaces
         """
@@ -1750,10 +1735,10 @@ class BasePage(ComparableMixin):
     ) -> Iterable[pywikibot.FilePage]:
         """Iterate FilePage objects for images displayed on this Page.
 
-        :param total: iterate no more than this number of pages in total
-        :param content: if True, retrieve the content of the current
+        :param total: Iterate no more than this number of pages in total
+        :param content: If True, retrieve the content of the current
             version of each image description page (default False)
-        :return: a generator that yields FilePage objects.
+        :return: A generator that yields FilePage objects.
         """
         return self.site.pageimages(self, total=total, content=content)
 
@@ -1765,22 +1750,22 @@ class BasePage(ComparableMixin):
     ) -> Iterable[pywikibot.Page]:
         """Iterate categories that the article is in.
 
-        .. versionchanged:: 2.0
+        .. version-changed:: 2.0
            *with_sort_key* parameter is not supported and a
            NotImplementedError is raised if set.
-        .. versionchanged:: 9.6
+        .. version-changed:: 9.6
            *with_sort_key* parameter is supported.
         .. seealso:: :meth:`Site.pagecategories()
            <pywikibot.site._generators.GeneratorsMixin.pagecategories>`
         .. note:: This method also yields categories which are
            transcluded.
 
-        :param with_sort_key: if True, include the sort key in
+        :param with_sort_key: If True, include the sort key in
             each Category.
-        :param total: iterate no more than this number of pages in total
-        :param content: if True, retrieve the content of the current
+        :param total: Iterate no more than this number of pages in total
+        :param content: If True, retrieve the content of the current
             version of each category description page (default False)
-        :return: a generator that yields Category objects.
+        :return: A generator that yields Category objects.
         """
         # Data might have been preloaded
         # Delete cache if content is needed and elements have no content
@@ -1797,8 +1782,8 @@ class BasePage(ComparableMixin):
     def extlinks(self, total: int | None = None) -> Iterable[str]:
         """Iterate all external URLs (not interwiki links) from this page.
 
-        :param total: iterate no more than this number of pages in total
-        :return: a generator that yields str objects containing URLs.
+        :param total: Iterate no more than this number of pages in total
+        :return: A generator that yields str objects containing URLs.
         """
         return self.site.page_extlinks(self, total=total)
 
@@ -1841,7 +1826,7 @@ class BasePage(ComparableMixin):
                           ignore_section: bool = True) -> pywikibot.Page:
         """Return a Page object for the target this Page redirects to.
 
-        .. versionadded:: 9.3
+        .. version-added:: 9.3
            *ignore_section* parameter
 
         .. seealso::
@@ -1849,15 +1834,15 @@ class BasePage(ComparableMixin):
              <pywikibot.site._apisite.APISite.getredirtarget>`
            * :meth:`moved_target`
 
-        :param ignore_section: do not include section to the target even
+        :param ignore_section: Do not include section to the target even
             the link has one
 
-        :raises CircularRedirectError: page is a circular redirect
-        :raises InterwikiRedirectPageError: the redirect target is on
+        :raises CircularRedirectError: Page is a circular redirect
+        :raises InterwikiRedirectPageError: The redirect target is on
             another site
-        :raises IsNotRedirectPageError: page is not a redirect
-        :raises RuntimeError: no redirects found
-        :raises SectionError: the section is not found on target page
+        :raises IsNotRedirectPageError: Page is not a redirect
+        :raises RuntimeError: No redirects found
+        :raises SectionError: The section is not found on target page
             and *ignore_section* is not set
         """
         return self.site.getredirtarget(self, ignore_section=ignore_section)
@@ -1870,7 +1855,7 @@ class BasePage(ComparableMixin):
 
         .. seealso:: :meth:`getRedirectTarget`
 
-        :raises NoMoveTargetError: page was not moved
+        :raises NoMoveTargetError: Page was not moved
         """
         gen = iter(self.site.logevents(logtype='move', page=self, total=1))
         try:
@@ -1927,11 +1912,11 @@ class BasePage(ComparableMixin):
                      starttime=None, endtime=None):
         """Compile contributors of this page with edit counts.
 
-        :param total: iterate no more than this number of revisions in total
-        :param starttime: retrieve revisions starting at this Timestamp
-        :param endtime: retrieve revisions ending at this Timestamp
+        :param total: Iterate no more than this number of revisions in total
+        :param starttime: Retrieve revisions starting at this Timestamp
+        :param endtime: Retrieve revisions ending at this Timestamp
 
-        :return: number of edits for each username
+        :return: Number of edits for each username
         :rtype: :py:obj:`collections.Counter`
         """
         return Counter(rev.user for rev in
@@ -1941,10 +1926,10 @@ class BasePage(ComparableMixin):
     def revision_count(self, contributors=None) -> int:
         """Determine number of edits from contributors.
 
-        :param contributors: contributor usernames
-        :type contributors: iterable of str or pywikibot.User, a single
+        :param contributors: Contributor usernames
+        :type contributors: Iterable of str or pywikibot.User, a single
             pywikibot.User, a str or None
-        :return: number of edits for all provided usernames
+        :return: Number of edits for all provided usernames
         """
         cnt = self.contributors()
 
@@ -1986,13 +1971,13 @@ class BasePage(ComparableMixin):
              movesubpages: bool = True) -> pywikibot.page.Page:
         """Move this page to a new title.
 
-        .. versionchanged:: 7.2
+        .. version-changed:: 7.2
            The *movesubpages* parameter was added
 
         :param newtitle: The new page title.
         :param reason: The edit summary for the move.
         :param movetalk: If true, move this page's talk page (if it exists)
-        :param noredirect: if move succeeds, delete the old page
+        :param noredirect: If move succeeds, delete the old page
             (usually requires sysop privileges, depending on wiki settings)
         :param movesubpages: Rename subpages, if applicable.
         """
@@ -2007,7 +1992,7 @@ class BasePage(ComparableMixin):
     def rollback(self, **kwargs: Any) -> dict[str, int | str]:
         """Roll back this page to the version before the last edit by a user.
 
-        .. versionadded:: 10.5
+        .. version-added:: 10.5
 
         .. seealso::
            :meth:`Site.rollbackpage()
@@ -2059,20 +2044,30 @@ class BasePage(ComparableMixin):
     ) -> int:
         """Delete the page from the wiki. Requires administrator status.
 
-        .. versionchanged:: 7.1
+        .. version-changed:: 7.1
            keyword only parameter *deletetalk* was added.
+
+        .. version-changed:: 11.2
+           *deletetalk* option was implemented for MediaWiki < 1.38wmf24.
+
+        .. seealso::
+           - :meth:`undelete`
+           - :meth:`loadDeletedRevisions`
+           - :meth:`markDeletedRevision`
+           - :meth:`site.APISite.delete
+             <pywikibot.site._apisite.APISite.delete>`
 
         :param reason: The edit summary for the deletion, or rationale
             for deletion if requesting. If None, ask for it.
-        :param deletetalk: Also delete the talk page, if it exists.
         :param prompt: If true, prompt user for confirmation before deleting.
         :param mark: If true, and user does not have sysop rights, place a
             speedy-deletion request on the page instead. If false, non-sysops
             will be asked before marking pages for deletion.
-        :param automatic_quit: show also the quit option, when asking
+        :param automatic_quit: Show also the quit option, when asking
             for confirmation.
+        :param deletetalk: Also delete the talk page, if it exists.
 
-        :return: the function returns an integer, with values as follows:
+        :return: The function returns an integer, with values as follows:
             value    meaning
             0        no action was done
             1        page was deleted
@@ -2129,7 +2124,7 @@ class BasePage(ComparableMixin):
     def has_deleted_revisions(self) -> bool:
         """Return True if the page has deleted revisions.
 
-        .. versionadded:: 4.2
+        .. version-added:: 4.2
         """
         if not hasattr(self, '_has_deleted_revisions'):
             gen = self.site.deletedrevs(self, total=1, prop=['ids'])
@@ -2142,7 +2137,7 @@ class BasePage(ComparableMixin):
         Stores all revisions' timestamps, dates, editors and comments in
         self._deletedRevs attribute.
 
-        :return: iterator of timestamps (which can be used to retrieve
+        :return: Iterator of timestamps (which can be used to retrieve
             revisions later on).
         :rtype: generator
         """
@@ -2192,7 +2187,7 @@ class BasePage(ComparableMixin):
         :param timestamp: Timestamp of the deleted revision
         :param content: If True, give also the content of the deleted
             revision.
-        :return: a dictionary information about the deleted revision. If
+        :return: A dictionary information about the deleted revision. If
             timestamp is not found, an empty list is given.
         """
         if hasattr(self, '_deletedRevs') \
@@ -2214,7 +2209,7 @@ class BasePage(ComparableMixin):
            - :meth:`undelete`
            - :meth:`loadDeletedRevisions`
 
-        :param undelete: if False, mark the revision to remain deleted.
+        :param undelete: If False, mark the revision to remain deleted.
         """
         if not hasattr(self, '_deletedRevs'):
             self.loadDeletedRevisions()
@@ -2247,6 +2242,7 @@ class BasePage(ComparableMixin):
             page.undelete('This will restore only selected revisions.')
 
         .. seealso::
+           - :meth:`delete`
            - :meth:`loadDeletedRevisions`
            - :meth:`markDeletedRevision`
            - :meth:`site.APISite.undelete
@@ -2292,6 +2288,8 @@ class BasePage(ComparableMixin):
              <pywikibot.site._apisite.APISite.protect>`
            - :meth:`applicable_protections`
 
+        :param reason: Reason for the action, default is None and will
+            set an empty string.
         :param protections: A dict mapping type of protection to
             protection level of that type. Allowed protection types for
             a page can be retrieved by :meth:`applicable_protections`.
@@ -2300,8 +2298,6 @@ class BasePage(ComparableMixin):
 
             Example: :code:`{'move': 'sysop', 'edit': 'autoconfirmed'}`
 
-        :param reason: Reason for the action, default is None and will
-            set an empty string.
         """
         protections = protections or {}  # protections is converted to {}
         reason = reason or ''  # None is converted to ''
@@ -2310,32 +2306,29 @@ class BasePage(ComparableMixin):
 
     def change_category(self, old_cat, new_cat,
                         summary: str | None = None,
-                        sort_key=None,
+                        sort_key: str | bool | None = None,
                         in_place: bool = True,
                         include: list[str] | None = None,
                         show_diff: bool = False) -> bool:
         """Remove page from oldCat and add it to newCat.
 
-        .. versionadded:: 7.0
+        .. version-added:: 7.0
            The `show_diff` parameter
 
-        :param old_cat: category to be removed
+        :param old_cat: Category to be removed
         :type old_cat: pywikibot.page.Category
-        :param new_cat: category to be added, if any
+        :param new_cat: Category to be added, if any
         :type new_cat: pywikibot.page.Category or None
-
-        :param summary: string to use as an edit summary
-
-        :param sort_key: sortKey to use for the added category.
-            Unused if newCat is None, or if inPlace=True
-            If sortKey=True, the sortKey used for oldCat will be used.
-
-        :param in_place: if True, change categories in place rather than
+        :param summary: String to use as an edit summary
+        :param sort_key: Sort key to use for the added category. Unused
+            if *new_cat* is None, or if *in_place* is True. If *sort_key*
+            is True, the sort Key used for *old_cat* will be used.
+        :param in_place: If True, change categories in place rather than
             rearranging them.
-
-        :param include: list of tags not to be disabled by default in relevant
-            textlib functions, where CategoryLinks can be searched.
-        :param show_diff: show changes between oldtext and newtext
+        :param include: List of tags not to be disabled by default in
+            relevant :mod:`textlib` functions, where category links can
+            be searched.
+        :param show_diff: Show changes between oldtext and newtext
             (default: False)
 
         :return: True if page was saved changed, otherwise False.

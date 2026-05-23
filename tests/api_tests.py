@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""API test module."""
 #
-# (C) Pywikibot team, 2007-2025
+# (C) Pywikibot team, 2007-2026
 #
 # Distributed under the terms of the MIT license.
 #
+"""API test module."""
 from __future__ import annotations
 
 import datetime
@@ -23,6 +23,13 @@ from pywikibot.throttle import Throttle
 from pywikibot.tools import suppress_warnings
 from tests.aspects import DefaultDrySiteTestCase, DefaultSiteTestCase, TestCase
 from tests.utils import FakeLoginManager
+
+
+SET_NAMESPACE_TYPE_MSG = (
+    r'int\(\) argument must be a string, a bytes-like object '
+    r"or (?:a real number|a number), not '?NoneType'?"
+)
+SET_NAMESPACE_MODULE = 'module does not support a namespace parameter'
 
 
 class TestApiFunctions(DefaultSiteTestCase):
@@ -458,7 +465,7 @@ class TestDryPageGenerator(TestCase):
         """Test PageGenerator set_namespace."""
         for namespace in (0, 1, None):
             with self.subTest(namespace=namespace), \
-                    self.assertRaises(AssertionError):
+                    self.assertRaisesRegex(TypeError, SET_NAMESPACE_MODULE):
                 self.gen.set_namespace(namespace)
 
 
@@ -615,25 +622,20 @@ class TestDryQueryGeneratorNamespaceParam(TestCase):
                                      parameters={'titles': 'test'})
         for namespace in (0, 1, None):
             with self.subTest(namespace=namespace), \
-                    self.assertRaises(AssertionError):
+                    self.assertRaisesRegex(TypeError, SET_NAMESPACE_MODULE):
                 self.gen.set_namespace(namespace)
 
-    @suppress_warnings(
-        r'^set_namespace\(\) will be modified to raise TypeError*',
-        FutureWarning)
     def test_namespace_param_is_not_settable(self) -> None:
         """Test ListGenerator support_namespace."""
         self.gen = api.ListGenerator(listaction='querypage', site=self.site)
         self.assertFalse(self.gen.support_namespace())
-        self.assertFalse(self.gen.set_namespace([0, 1]))
+        with self.assertRaisesRegex(TypeError, SET_NAMESPACE_MODULE):
+            self.gen.set_namespace([0, 1])
 
     def test_namespace_none(self) -> None:
         """Test ListGenerator set_namespace with None."""
         self.gen = api.ListGenerator(listaction='allpages', site=self.site)
-        with self.assertRaisesRegex(
-            TypeError,
-            (r'int\(\) argument must be a string, a bytes-like object '
-             r"or (?:a real number|a number), not 'NoneType'")):
+        with self.assertRaisesRegex(TypeError, SET_NAMESPACE_TYPE_MSG):
             self.gen.set_namespace(None)
 
     def test_namespace_multi(self) -> None:
@@ -672,10 +674,7 @@ class TestDryListGenerator(TestCase):
 
     def test_namespace_none(self) -> None:
         """Test ListGenerator set_namespace with None."""
-        with self.assertRaisesRegex(
-            TypeError,
-            (r'int\(\) argument must be a string, a bytes-like object '
-             r"or (?:a real number|a number), not 'NoneType'")):
+        with self.assertRaisesRegex(TypeError, SET_NAMESPACE_TYPE_MSG):
             self.gen.set_namespace(None)
 
     def test_namespace_zero(self) -> None:

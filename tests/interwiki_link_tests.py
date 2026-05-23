@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
-"""Test Interwiki Link functionality."""
 #
-# (C) Pywikibot team, 2014-2025
+# (C) Pywikibot team, 2014-2026
 #
 # Distributed under the terms of the MIT license.
 #
+"""Test Interwiki Link functionality."""
 from __future__ import annotations
 
+import unittest
 from contextlib import suppress
 
 from pywikibot import config
 from pywikibot.exceptions import InvalidTitleError
 from pywikibot.page import Link
 from tests.aspects import AlteredDefaultSiteTestCase as LinkTestCase
-from tests.aspects import TestCase, unittest
+from tests.aspects import TestCase
 
 
 class TestPartiallyQualifiedLinkDifferentCodeParser(LinkTestCase):

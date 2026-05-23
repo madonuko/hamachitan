@@ -1,26 +1,37 @@
-"""Family module for Meta Wiki."""
 #
-# (C) Pywikibot team, 2005-2024
+# (C) Pywikibot team, 2005-2026
 #
 # Distributed under the terms of the MIT license.
 #
+"""Family module for Meta Wiki."""
 from __future__ import annotations
 
 from pywikibot import family
 
 
-# The Wikimedia Meta-Wiki family
-class Family(family.WikimediaOrgFamily):
+class Family(family.WikimediaFamily):
 
-    """Family class for Meta Wiki."""
+    """Family class for Meta Wiki.
+
+    .. version-changed:: 11.0
+       beta site code was added.
+    """
 
     name = 'meta'
 
+    langs = {
+        'meta': 'meta.wikimedia.org',
+        'beta': 'meta.wikimedia.beta.wmcloud.org',
+    }
+    # Sites we want to edit but not count as real languages
+    test_codes = ['beta']
     interwiki_forward = 'wikipedia'
     cross_allowed = ['meta']
 
+    # Templates that indicate a category redirect
+    # Redirects to these templates are automatically included
     category_redirect_templates = {
-        'meta': (
+        '_default': (
             'Category redirect',
         ),
     }

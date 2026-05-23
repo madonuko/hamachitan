@@ -1,20 +1,21 @@
-"""Objects representing API interface to Wikibase site."""
 #
-# (C) Pywikibot team, 2012-2025
+# (C) Pywikibot team, 2012-2026
 #
 # Distributed under the terms of the MIT license.
 #
+"""Objects representing API interface to Wikibase site."""
 from __future__ import annotations
 
 import datetime
 import json
 import uuid
+from collections.abc import Generator, Iterable
 from contextlib import suppress
 from typing import Any
 from warnings import warn
 
 import pywikibot
-from pywikibot.backports import Generator, Iterable, batched
+from pywikibot.backports import batched
 from pywikibot.data import api
 from pywikibot.exceptions import (
     APIError,
@@ -57,7 +58,7 @@ class DataSite(APISite):
         support that entity type either.
 
         .. seealso:: https://www.mediawiki.org/wiki/Wikibase/Federation
-        .. versionadded:: 8.0
+        .. version-added:: 8.0
 
         :raises ValueError: when invalid entity type was provided
         """
@@ -169,7 +170,7 @@ class DataSite(APISite):
 
         return None
 
-    def loadcontent(self, identification, *props):
+    def loadcontent(self, identification: dict[str, Any], *props):
         """Fetch the current content of a Wikibase item.
 
         This is called loadcontent since wbgetentities does not support
@@ -177,8 +178,7 @@ class DataSite(APISite):
         actual loadrevisions.
 
         :param identification: Parameters used to identify the page(s)
-        :type identification: dict
-        :param props: the optional properties to fetch.
+        :param props: The optional properties to fetch.
         """
         params = merge_unique_dicts(identification, action='wbgetentities',
                                     # TODO: When props is empty it results in
@@ -196,15 +196,15 @@ class DataSite(APISite):
         pagelist: Iterable[pywikibot.page.WikibaseEntity
                            | pywikibot.page.Page],
         groupsize: int = 50
-    ) -> Generator[pywikibot.page.WikibaseEntity, None, None]:
+    ) -> Generator[pywikibot.page.WikibaseEntity]:
         """Yield subclasses of WikibaseEntity's with content prefilled.
 
         .. note:: Pages will be iterated in a different order than in
            the underlying pagelist.
 
-        :param pagelist: an iterable that yields either WikibaseEntity
+        :param pagelist: An iterable that yields either WikibaseEntity
             objects, or Page objects linked to an ItemPage.
-        :param groupsize: how many pages to query at a time
+        :param groupsize: How many pages to query at a time
         """
         if not hasattr(self, '_entity_namespaces'):
             self._cache_entity_namespaces()
@@ -243,7 +243,7 @@ class DataSite(APISite):
         This is used specifically because we can cache the value for a
         much longer time (near infinite).
 
-        .. versionadded:: 9.5
+        .. version-added:: 9.5
 
         :raises NoWikibaseEntityError: *prop* does not exist
         """
@@ -273,7 +273,7 @@ class DataSite(APISite):
     def getPropertyType(self, prop):
         """Obtain the type of a property.
 
-        .. deprecated:: 9.5
+        .. version-deprecated:: 9.5
            Use :meth:`get_property_type` instead.
         """
         try:
@@ -293,12 +293,12 @@ class DataSite(APISite):
            ``item`` if dict with API parameters was passed to *entity*
            parameter.
 
-        .. versionchanged:: 9.4
+        .. version-changed:: 9.4
            *tags* keyword argument was added
 
         :param entity: Page to edit, or dict with API parameters
             to use for entity identification.
-        :param data: data updates
+        :param data: Data updates
         :param bot: Whether to mark the edit as a bot edit.
 
         :keyword int baserevid: The numeric identifier for the revision
@@ -359,7 +359,7 @@ class DataSite(APISite):
                  tags: str | None = None) -> None:
         """Add a claim.
 
-        .. versionchanged:: 9.4
+        .. version-changed:: 9.4
            *tags* parameter was added
 
         :param entity: Entity to modify
@@ -396,7 +396,7 @@ class DataSite(APISite):
                           tags: str | None = None):
         """Set the claim target to the value of the provided claim target.
 
-        .. versionchanged:: 9.4
+        .. version-changed:: 9.4
            *tags* parameter was added
 
         :param claim: The source of the claim target value
@@ -438,12 +438,12 @@ class DataSite(APISite):
                    tags: str | None = None):
         """Save the whole claim to the wikibase site.
 
-        .. versionchanged:: 9.4
+        .. version-changed:: 9.4
            *tags* parameter was added
 
         :param claim: The claim to save
-        :param bot: Whether to mark the edit as a bot edit
         :param summary: Edit summary
+        :param bot: Whether to mark the edit as a bot edit
         :param tags: Change tags to apply to the revision
         :raises NoPageError: missing the the snak value
         :raises NotImplementedError: ``claim.isReference`` or
@@ -481,9 +481,9 @@ class DataSite(APISite):
                    tags: str | None = None):
         """Create/Edit a source.
 
-        .. versionchanged:: 9.4
+        .. version-changed:: 9.4
            *tags* parameter was added
-        .. versionchanged:: 10.0
+        .. version-changed:: 10.0
            deprecated *baserevid* parameter was removed
 
         :param claim: A Claim object to add the source to.
@@ -541,9 +541,9 @@ class DataSite(APISite):
                       tags: str | None = None):
         """Create/Edit a qualifier.
 
-        .. versionchanged:: 9.4
+        .. version-changed:: 9.4
            *tags* parameter was added
-        .. versionchanged:: 10.0
+        .. version-changed:: 10.0
            deprecated *baserevid* parameter was removed
 
         :param claim: A Claim object to add the qualifier to
@@ -590,9 +590,9 @@ class DataSite(APISite):
                      tags: str | None = None):
         """Remove claims.
 
-        .. versionchanged:: 9.4
+        .. version-changed:: 9.4
            *tags* parameter was added
-        .. versionchanged:: 10.0
+        .. version-changed:: 10.0
            deprecated *baserevid* parameter was removed
 
         :param claims: Claims to be removed
@@ -627,9 +627,9 @@ class DataSite(APISite):
                       tags: str | None = None):
         """Remove sources.
 
-        .. versionchanged:: 9.4
+        .. version-changed:: 9.4
            *tags* parameter was added
-        .. versionchanged:: 10.0
+        .. version-changed:: 10.0
            deprecated `baserevid` parameter was removed
 
         :param claim: A Claim object to remove the sources from
@@ -661,9 +661,9 @@ class DataSite(APISite):
                           tags: str | None = None):
         """Remove qualifiers.
 
-        .. versionchanged:: 9.4
+        .. version-changed:: 9.4
            *tags* parameter was added
-        .. versionchanged:: 10.0
+        .. version-changed:: 10.0
            deprecated `baserevid` parameter was removed
 
         :param claim: A Claim object to remove the qualifier from
@@ -693,7 +693,7 @@ class DataSite(APISite):
                    bot: bool = True) -> dict:
         """Link two pages together.
 
-        .. versionchanged:: 9.4
+        .. version-changed:: 9.4
            *tags* parameter was added
 
         :param page1: First page to link
@@ -724,7 +724,7 @@ class DataSite(APISite):
                    tags: str | None = None) -> dict:
         """Merge two items together.
 
-        .. versionchanged:: 9.4
+        .. version-changed:: 9.4
            *tags* parameter was added
 
         :param from_item: Item to merge from
@@ -782,10 +782,10 @@ class DataSite(APISite):
     def set_redirect_target(self, from_item, to_item, bot: bool = True):
         """Make a redirect to another item.
 
-        :param to_item: title of target item.
-        :type to_item: pywikibot.ItemPage
         :param from_item: Title of the item to be redirected.
         :type from_item: pywikibot.ItemPage
+        :param to_item: Title of target item.
+        :type to_item: pywikibot.ItemPage
         :param bot: Whether to mark the edit as a bot edit
         """
         params = {
@@ -835,20 +835,20 @@ class DataSite(APISite):
                    validate: bool = False) -> list[Any]:
         """Send data values to the wikibase parser for interpretation.
 
-        .. versionadded:: 7.5
+        .. version-added:: 7.5
         .. seealso:: `wbparsevalue API
            <https://www.wikidata.org/w/api.php?action=help&modules=wbparsevalue>`_
 
-        :param datatype: datatype of the values being parsed. Refer the
+        :param datatype: Data type of the values being parsed. Refer the
             API for a valid datatype.
-        :param values: list of values to be parsed
-        :param options: any additional options for wikibase parser
+        :param values: List of values to be parsed
+        :param options: Any additional options for wikibase parser
             (for time, 'precision' should be specified)
-        :param language: code of the language to parse the value in
-        :param validate: whether parser should provide data validation as well
-            as parsing
+        :param language: The code of the language to parse the value in
+        :param validate: Whether parser should provide data validation
+            as well as parsing
         :return: list of parsed values
-        :raises ValueError: parsing failed due to some invalid input values
+        :raises ValueError: Parsing failed due to some invalid input values
         """
         params = {
             'action': 'wbparsevalue',
@@ -1081,18 +1081,21 @@ class DataSite(APISite):
 
     @need_right('edit')
     @need_extension('WikibaseLexeme')
-    def edit_form_elements(self, form, data, *, bot: bool = True,
-                           baserevid=None) -> dict:
+    def edit_form_elements(
+        self,
+        form: pywikibot.LexemeForm,
+        data: dict[str, Any],
+        *,
+        bot: bool = True,
+        baserevid: int | None = None
+    ) -> dict:
         """Edit lexeme form elements.
 
         :param form: Form
-        :type form: pywikibot.LexemeForm
-        :param data: data updates
-        :type data: dict
-        :keyword bot: Whether to mark the edit as a bot edit
-        :keyword baserevid: Base revision id override, used to detect
+        :param data: Data updates
+        :param bot: Whether to mark the edit as a bot edit
+        :param baserevid: Base revision id override, used to detect
             conflicts.
-        :type baserevid: long
         :return: New form data
         """
         params = {

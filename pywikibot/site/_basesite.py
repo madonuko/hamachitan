@@ -1,9 +1,9 @@
-"""Objects with site methods independent of the communication interface."""
 #
-# (C) Pywikibot team, 2008-2024
+# (C) Pywikibot team, 2008-2026
 #
 # Distributed under the terms of the MIT license.
 #
+"""Objects with site methods independent of the communication interface."""
 from __future__ import annotations
 
 import functools
@@ -13,7 +13,6 @@ import threading
 from warnings import warn
 
 import pywikibot
-from pywikibot.backports import Pattern
 from pywikibot.exceptions import (
     Error,
     FamilyMaintenanceWarning,
@@ -34,17 +33,48 @@ from pywikibot.tools import (
 
 class BaseSite(ComparableMixin):
 
-    """Site methods that are independent of the communication interface."""
+    """Site methods that are independent of the communication interface.
 
-    def __init__(self, code: str, fam=None, user=None) -> None:
+    .. hint::
+       :class:`BaseSite` delegates undefined method calls to the
+       corresponding :class:`family.Family` object by its
+       :meth:`__getattr__` method. The working method is described below.
+
+       Only public Family instance methods are delegated. A method is
+       considered delegatable if:
+
+       - it is a bound instance method of Family,
+       - it is public (name does not start with '_'),
+       - its first logical parameter is *code*.
+
+       .. note::
+          For performance reasons, the method signature is inspected
+          via the method's ``__code__`` object instead of
+          ``inspect.signature()``. This avoids expensive generic
+          introspection in this hot path and is safe because Family
+          methods are guaranteed to be pure Python.
+
+       .. version-changed:: 9.0
+          Only delegate to public Family methods which have ``code`` as
+          first parameter.
+       .. version-changed:: 11.0
+          Use direct ``__code__`` inspection instead of
+          ``inspect.signature()`` to significantly improve attribute
+          access performance.
+       .. version-changed:: 11.1
+          :meth:`__getattr__` raises NotImplementedError instead of
+          AttributeError if a Family method or attribute exists but
+          cannot be delegated. This can happen if *name* is not a method
+          or the first parameter is not *code*.
+    """
+
+    def __init__(self, code: str, fam=None, user: str | None = None) -> None:
         """Initializer.
 
-        :param code: the site's language code
-        :type code: str
-        :param fam: wiki family name (optional)
-        :type fam: str or pywikibot.family.Family
-        :param user: bot user name (optional)
-        :type user: str
+        :param code: The site's language code
+        :param fam: Wiki family name (optional)
+        :type fam: str or pywikibot.family.Family or None
+        :param user: Bot user name (optional)
         """
         if code.lower() != code:
             # Note the Site function in __init__ also emits a UserWarning
@@ -94,19 +124,6 @@ class BaseSite(ComparableMixin):
         # following are for use with lock_page and unlock_page methods
         self._pagemutex = threading.Condition()
         self._locked_pages: set[str] = set()
-
-    @property
-    @deprecated(since='8.5.0')
-    def use_hard_category_redirects(self) -> bool:
-        """Hard redirects are used for this site.
-
-        Originally create as property for future use for a proposal to
-        replace category redirect templates with hard redirects. This
-        was never implemented and is not used inside the framework.
-
-        .. deprecated:: 8.5
-        """
-        return False
 
     @property
     @cached
@@ -197,26 +214,30 @@ class BaseSite(ComparableMixin):
         return self._username
 
     def __getattr__(self, name: str):
-        """Delegate undefined methods calls to the Family object.
-
-        .. versionchanged:: 9.0
-           Only delegate to public Family methods which have ``code`` as
-           first parameter.
-        """
+        """Delegate undefined methods calls to the Family object."""
+        # See description in BaseSite class documentation
+        msg = f'{type(self).__name__} instance has no attribute {name!r}'
         if not name.startswith('_'):
             obj = getattr(self.family, name, None)
-            if inspect.ismethod(obj):
-                params = inspect.signature(obj).parameters
-                if params:
-                    parameter = next(iter(params))
-                    if parameter == 'code':
-                        method = functools.partial(obj, self.code)
-                        if hasattr(obj, '__doc__'):
-                            method.__doc__ = obj.__doc__
-                        return method
+            if not obj:
+                raise AttributeError(msg) from None
 
-        raise AttributeError(f'{type(self).__name__} instance has no '
-                             f'attribute {name!r}') from None
+            if inspect.ismethod(obj):
+                code = obj.__code__
+                params = code.co_varnames[:code.co_argcount]
+                if len(params) > 1 and params[1] == 'code':
+                    method = functools.partial(obj, self.code)
+                    if hasattr(obj, '__doc__'):
+                        method.__doc__ = obj.__doc__
+                    return method
+
+            raise NotImplementedError(
+                f"'{name}()' method of {type(self).__name__} is not "
+                f'implemented. Maybe the {self.family}_family.py family file'
+                ' is malformed'
+            ) from None
+
+        raise AttributeError(msg) from None
 
     def __str__(self) -> str:
         """Return string representing this Site's name and code."""
@@ -239,7 +260,7 @@ class BaseSite(ComparableMixin):
     def languages(self) -> list[str]:
         """Return list of all valid site codes for this site's Family.
 
-        .. deprecated:: 9.6
+        .. version-deprecated:: 9.6
            Use :meth:`codes` instead.
         """
         return sorted(self.codes)
@@ -248,7 +269,7 @@ class BaseSite(ComparableMixin):
     def codes(self) -> set[str]:
         """Return set of all valid site codes for this site's Family.
 
-        .. versionadded:: 9.6
+        .. version-added:: 9.6
         .. seealso:: :attr:`family.Family.codes`
         """
         return set(self.family.langs.keys())
@@ -288,7 +309,7 @@ class BaseSite(ComparableMixin):
     def redirect(self) -> str:
         """Return a default redirect tag for the site.
 
-        .. versionchanged:: 8.4
+        .. version-changed:: 8.4
            return a single generic redirect tag instead of a list of
            tags. For the list use :meth:`redirects` instead.
         """
@@ -298,7 +319,7 @@ class BaseSite(ComparableMixin):
         """Return list of generic redirect tags for the site.
 
         .. seealso:: :meth:`redirect` for the default redirect tag.
-        .. versionadded:: 8.4
+        .. version-added:: 8.4
         """
         return ['REDIRECT']
 
@@ -316,9 +337,9 @@ class BaseSite(ComparableMixin):
         We don't want different threads trying to write to the same page
         at the same time, even to different sections.
 
-        :param page: the page to be locked
+        :param page: The page to be locked
         :type page: pywikibot.Page
-        :param block: if true, wait until the page is available to be
+        :param block: If true, wait until the page is available to be
             locked; otherwise, raise an exception if page can't be
             locked
         """
@@ -333,7 +354,7 @@ class BaseSite(ComparableMixin):
     def unlock_page(self, page) -> None:
         """Unlock page. Call as soon as a write operation has completed.
 
-        :param page: the page to be locked
+        :param page: The page to be locked
         :type page: pywikibot.Page
         """
         with self._pagemutex:
@@ -380,7 +401,7 @@ class BaseSite(ComparableMixin):
         return linkfam != self.family.name or linkcode != self.code
 
     @property
-    def redirect_regex(self) -> Pattern[str]:
+    def redirect_regex(self) -> re.Pattern[str]:
         """Return a compiled regular expression matching on redirect pages.
 
         Group 1 in the regex match object will be the target title.
@@ -389,7 +410,7 @@ class BaseSite(ComparableMixin):
         arbitrary stuff, then a wikilink. The wikilink may contain a
         label, although this is not useful.
 
-        .. versionadded:: 8.4
+        .. version-added:: 8.4
            moved from class:`APISite<pywikibot.site._apisite.APISite>`
         """
         tags = '|'.join(self.redirects())

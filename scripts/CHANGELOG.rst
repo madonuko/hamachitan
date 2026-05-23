@@ -1,6 +1,74 @@
 Scripts Changelog
 =================
 
+11.3.0
+------
+
+addwikis
+^^^^^^^^
+
+* Update :attr:`family.WikimediaFamily.known_codes` together with wiki updates (:phab:`T426319`)
+
+interwiki
+^^^^^^^^^
+
+* Ignore site codes of ``-neverlink`` option instead of deleting them (:phab:`T410104`)
+
+noreferences
+^^^^^^^^^^^^
+
+* No longer skip references headers without trailing newline (:phab:`T424283`)
+
+parser_function_count
+^^^^^^^^^^^^^^^^^^^^^
+
+* Load all pages with content flag (:phab:`T423836`)
+
+
+11.2.0
+------
+
+speedy_delete
+^^^^^^^^^^^^^
+
+* Use :python:`generator.close()<reference/expressions.html#generator.close>` instead of ``stop()`` method which was removed in Pywikibot 7 (:phab:`T420169`)
+* Don't add user talk pages to generator, use *deletetalk* option instead (:phab:`T420170`)
+
+
+11.1.0
+------
+
+* i18n updates
+
+weblinkchecker
+^^^^^^^^^^^^^^
+
+* Use preferred site encodings for Accept-Charset (:phab:`T417142`)
+* Fix i18n message key (:phab:`T416785`)
+
+11.0.0
+------
+
+* L10N and i18n updates
+* ``create_isbn_edition`` script was removed from scripts package (:phab:`T398140`)
+
+addwikis:
+^^^^^^^^^
+
+* Show the difference instead of the new list.
+
+archivebot
+^^^^^^^^^^
+
+* Also no longer search for an archiveheader template if it is already
+  given with the archive template. (:phab:`T414068`)
+* respect the ``-namespace`` option with ``-page`` option (:phab:`T409016`)
+
+welcome
+^^^^^^^
+
+* Check whether the script is localized within WelcomeBot initializer.  (:phab:`T414007`)
+
 10.7.0
 ------
 
@@ -444,7 +512,7 @@ clean_sandbox
 ^^^^^^^^^^^^^
 
 * L10N updates
-* A `-textfile` option was addet to fetch the text from a file
+* A `-textfile` option was added to fetch the text from a file
 
 create_isbn_edition
 ^^^^^^^^^^^^^^^^^^^
@@ -824,7 +892,7 @@ solve_disambiguation
 touch
 ^^^^^
 
-\*Do not pass OtherPageSaveRelatedError silently
+* Do not pass OtherPageSaveRelatedError silently
 
 unusedfiles
 ^^^^^^^^^^^
@@ -871,8 +939,7 @@ reflinks
 general
 ^^^^^^^
 
-*  show a warning if pywikibot.__version_\_ is behind
-   scripts.__version_\_
+*  show a warning if ``pywikibot.__version__`` is behind ``scripts.__version__``
 
 addtext
 ^^^^^^^

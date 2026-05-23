@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+#
+# (C) Pywikibot team, 2006-2026
+#
+# Distributed under the terms of the MIT license.
+#
 """An incomplete sample script.
 
 This is not a complete bot; rather, it is a template from which simple
@@ -30,7 +35,7 @@ that settings file below the [basic] section like:
 .. code:: ini
 
     [basic] ; inline comments starts with colon
-    # This is a commend line. Assignments may be done with '=' or ':'
+    # This is a comment line. Assignments may be done with '=' or ':'
     text: A text with line break and
         continuing on next line to be put
     replace: yes ; yes/no, on/off, true/false and 1/0 is also valid
@@ -43,11 +48,6 @@ cannot be set by settings file:
 
 &params;
 """
-#
-# (C) Pywikibot team, 2006-2024
-#
-# Distributed under the terms of the MIT license.
-#
 from __future__ import annotations
 
 import pywikibot

@@ -1,9 +1,9 @@
-"""SPARQL Query interface."""
 #
-# (C) Pywikibot team, 2016-2025
+# (C) Pywikibot team, 2016-2026
 #
 # Distributed under the terms of the MIT license.
 #
+"""SPARQL Query interface."""
 from __future__ import annotations
 
 from textwrap import fill
@@ -14,7 +14,6 @@ from requests import JSONDecodeError
 from requests.exceptions import Timeout
 
 from pywikibot import Site
-from pywikibot.backports import Dict, removeprefix
 from pywikibot.comms import http
 from pywikibot.data import WaitingMixin
 from pywikibot.exceptions import Error, NoUsernameError, ServerError
@@ -30,7 +29,7 @@ class SparqlQuery(WaitingMixin):
 
     This class allows to run SPARQL queries against any SPARQL endpoint.
 
-    .. versionchanged:: 8.4
+    .. version-changed:: 8.4
        inherited from :class:`data.WaitingMixin` which provides a
        :meth:`data.WaitingMixin.wait` method.
     """
@@ -112,7 +111,7 @@ class SparqlQuery(WaitingMixin):
         result = []
         qvars = data['head']['vars']
         for row in data['results']['bindings']:
-            values: Dict[str, Any] = {}
+            values: dict[str, Any] = {}
             for var in qvars:
                 if var not in row:
                     # var is not available (OPTIONAL is probably used)
@@ -131,10 +130,10 @@ class SparqlQuery(WaitingMixin):
     def query(self, query: str, headers: dict[str, str] | None = None):
         """Run SPARQL query and return parsed JSON result.
 
-        .. versionchanged:: 8.5
+        .. version-changed:: 8.5
            :exc:`exceptions.NoUsernameError` is raised if the response
            looks like the user is not logged in.
-        .. versionchanged:: 9.6
+        .. version-changed:: 9.6
            retry on internal server error (500).
 
         :param query: Query text
@@ -239,7 +238,8 @@ class URI(SparqlNode):
         :return: ID of Wikibase object, e.g. Q1234
         """
         if self.value.startswith(self.entity_url):
-            return removeprefix(self.value, self.entity_url)
+            return self.value.removeprefix(self.entity_url)
+
         return None
 
     def __repr__(self) -> str:

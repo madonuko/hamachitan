@@ -1,48 +1,42 @@
-"""Functions for manipulating wiki-text."""
 #
-# (C) Pywikibot team, 2008-2025
+# (C) Pywikibot team, 2008-2026
 #
 # Distributed under the terms of the MIT license.
 #
+"""Functions for manipulating wiki-text."""
 from __future__ import annotations
 
 import itertools
 import re
 import sys
 from collections import OrderedDict
-from collections.abc import Sequence
+from collections.abc import Callable, Container, Iterable, Mapping, Sequence
 from contextlib import closing, suppress
 from dataclasses import dataclass
 from html.parser import HTMLParser
 from typing import NamedTuple
 
 import pywikibot
-from pywikibot.backports import Callable, Container, Iterable, Match
-from pywikibot.backports import OrderedDict as OrderedDictType
-from pywikibot.backports import Pattern
-from pywikibot.backports import Sequence as SequenceType
 from pywikibot.backports import pairwise
 from pywikibot.exceptions import InvalidTitleError, SiteDefinitionError
 from pywikibot.family import Family
 from pywikibot.time import TZoneFixedOffset
-from pywikibot.tools import (
-    ModuleDeprecationWrapper,
-    deprecated,
-    deprecated_args,
-    first_lower,
-    first_upper,
-)
+from pywikibot.tools import ModuleDeprecationWrapper, first_lower, first_upper
+from pywikibot.tools.chars import INVISIBLE_REGEX
 from pywikibot.userinterfaces.transliteration import NON_ASCII_DIGITS
 
 
 try:
     import wikitextparser
-except ImportError:
-    import mwparserfromhell as wikitextparser
+except ModuleNotFoundError:
+    try:
+        import mwparserfromhell as wikitextparser
+    except ModuleNotFoundError as e:
+        wikitextparser = e
 
 
 # cache for replaceExcept to avoid recompile or regexes each call
-_regex_cache: dict[str, Pattern[str]] = {}
+_regex_cache: dict[str, re.Pattern[str]] = {}
 
 # The regex below collects nested templates, providing simpler
 # identification of templates used at the top-level of wikitext.
@@ -127,11 +121,11 @@ def to_local_digits(phrase: str | int, lang: str) -> str:
        languages, and that it returns an unchanged string if an
        unsupported language is given.
 
-    .. versionchanged:: 7.5
+    .. version-changed:: 7.5
        always return a string even `phrase` is an int.
 
     :param phrase: The phrase to convert to localized numerical
-    :param lang: language code
+    :param lang: Language code
     :return: The localized version
     """
     digits = NON_ASCII_DIGITS.get(lang)
@@ -143,11 +137,11 @@ def to_local_digits(phrase: str | int, lang: str) -> str:
 
 
 def to_ascii_digits(phrase: str,
-                    langs: SequenceType[str] | str | None = None) -> str:
+                    langs: Sequence[str] | str | None = None) -> str:
     """Change non-ascii digits to ascii digits.
 
-    .. versionadded:: 7.0
-    .. versionchanged:: 10.3
+    .. version-added:: 7.0
+    .. version-changed:: 10.3
        this function was renamed from to_latin_digits.
 
     :param phrase: The phrase to convert to ascii numerical.
@@ -171,13 +165,13 @@ def to_ascii_digits(phrase: str,
 def case_escape(case: str, string: str, *, underscore: bool = False) -> str:
     """Return an escaped regex pattern which depends on 'first-letter' case.
 
-    .. versionadded:: 7.0
-    .. versionchanged:: 8.4
+    .. version-added:: 7.0
+    .. version-changed:: 8.4
        Added the optional *underscore* parameter.
 
-    :param case: if `case` is 'first-letter', the regex contains an
+    :param case: If `case` is 'first-letter', the regex contains an
         inline re.IGNORECASE flag for the first letter
-    :param underscore: if True, expand the regex to detect spaces and
+    :param underscore: If True, expand the regex to detect spaces and
         underscores which are interchangeable and collapsible
     """
     if case == 'first-letter':
@@ -235,7 +229,7 @@ class MultiTemplateMatchBuilder:
 def ignore_case(string: str) -> str:
     """Return a case-insensitive pattern for the string.
 
-    .. versionchanged:: 7.2
+    .. version-changed:: 7.2
        `_ignore_case` becomes a public method
     """
     return ''.join(
@@ -320,18 +314,18 @@ def _create_default_regexes() -> None:
 def get_regexes(
     keys: str | Iterable[str],
     site: pywikibot.site.BaseSite | None = None
-) -> list[Pattern[str]]:
+) -> list[re.Pattern[str]]:
     """Fetch compiled regexes.
 
-    .. versionchanged:: 8.2
+    .. version-changed:: 8.2
        ``_get_regexes`` becomes a public function.
        *keys* may be a single string; *site* is optional.
 
-    :param keys: a single key or an iterable of keys whose regex pattern
+    :param keys: A single key or an iterable of keys whose regex pattern
         should be given
-    :param site: a BaseSite object needed for ``category``, ``file``,
+    :param site: A BaseSite object needed for ``category``, ``file``,
         ``interwiki``, ``invoke`` and ``property`` keys
-    :raises ValueError: site cannot be None.
+    :raises ValueError: Site cannot be None.
     """
     if not _regex_cache:
         _create_default_regexes()
@@ -382,9 +376,9 @@ def get_regexes(
 
 
 def replaceExcept(text: str,
-                  old: str | Pattern[str],
-                  new: str | Callable[[Match[str]], str],
-                  exceptions: SequenceType[str | Pattern[str]],
+                  old: str | re.Pattern[str],
+                  new: str | Callable[[re.Match[str]], str],
+                  exceptions: Sequence[str | re.Pattern[str]],
                   caseInsensitive: bool = False,
                   allowoverlap: bool = False,
                   marker: str = '',
@@ -400,17 +394,17 @@ def replaceExcept(text: str,
     .. caution:: Watch out when using *allowoverlap*, it might lead to
        infinite loops!
 
-    :param text: text to be modified
-    :param old: a compiled or uncompiled regular expression
-    :param new: a string (which can contain regular expression
+    :param text: Text to be modified
+    :param old: A compiled or uncompiled regular expression
+    :param new: A string (which can contain regular expression
         references), or a function which takes a match object as
         parameter. See parameter *repl* of ``re.sub()``.
-    :param exceptions: a list of strings or already compiled regex
+    :param exceptions: A list of strings or already compiled regex
         objects which signal what to leave out. List of strings might be
         like ``['math', 'table', 'template']`` for example.
-    :param marker: a string that will be added to the last replacement;
+    :param marker: A string that will be added to the last replacement;
         if nothing is changed, it is added at the end
-    :param count: how many replacements to do at most. See parameter
+    :param count: How many replacements to do at most. See parameter
         *count* of ``re.sub()``.
     """
     # if we got a string, compile it as a regular expression
@@ -519,7 +513,7 @@ def removeDisabledParts(text: str,
     * includeonly tags
     * source and syntaxhighlight tags
 
-    .. versionchanged:: 7.0
+    .. version-changed:: 7.0
        the order of removals will correspond to the tags argument
        if provided as an ordered collection (list, tuple)
 
@@ -529,7 +523,7 @@ def removeDisabledParts(text: str,
         be removed.
     :param site: Site to be used for site-dependent regexes. Default
         disabled parts listed above do not need it.
-    :return: text stripped from disabled parts.
+    :return: Text stripped from disabled parts.
     """
     if not tags:
         tags = ['comment', 'includeonly', 'nowiki', 'pre', 'syntaxhighlight']
@@ -573,7 +567,7 @@ def removeHTMLParts(text: str,
 
     .. caution:: Tag names must be given in lowercase.
 
-    .. versionchanged:: 10.3
+    .. version-changed:: 10.3
        The *removetags* parameter was added. Refactored to use
        :class:`GetDataHTML` and its ``__call__`` method. tag attributes
        will be kept.
@@ -647,10 +641,10 @@ class GetDataHTML(HTMLParser):
 
     .. caution:: Tag names must be given in lowercase.
 
-    .. versionchanged:: 9.2
+    .. version-changed:: 9.2
        No longer a context manager
 
-    .. versionchanged:: 10.3
+    .. version-changed:: 10.3
        Public class now. Added support for removals of tag contents.
 
     .. seealso::
@@ -718,7 +712,7 @@ class GetDataHTML(HTMLParser):
         listed in *removetags* begin a skip block, and their content
         will be excluded from the output.
 
-        .. versionchanged:: 10.3
+        .. version-changed:: 10.3
            Keep tag attributes.
 
         :param tag: The tag name (e.g., "div", "script") converted to
@@ -781,11 +775,11 @@ def expandmarker(text: str, marker: str = '', separator: str = '') -> str:
     It searches for the first occurrence of the marker and gets the
     combination of the separator and whitespace directly before it.
 
-    :param text: the text which will be searched.
-    :param marker: the marker to be searched.
-    :param separator: the separator string allowed before the marker. If
+    :param text: The text which will be searched.
+    :param marker: The marker to be searched.
+    :param separator: The separator string allowed before the marker. If
         empty it won't include whitespace too.
-    :return: the marker with the separator and whitespace from the text
+    :return: The marker with the separator and whitespace from the text
         in front of it. It'll be just the marker if the separator is
         empty.
     """
@@ -829,11 +823,11 @@ def replace_links(text: str, replace, site: pywikibot.site.BaseSite) -> str:
     function which returns a Link instance and copies the value which should
     remaining.
 
-    .. versionchanged:: 7.0
+    .. version-changed:: 7.0
        `site` parameter is mandatory
 
-    :param text: the text in which to replace links
-    :param replace: either a callable which reacts like described above.
+    :param text: The text in which to replace links
+    :param replace: Either a callable which reacts like described above.
         The callable must accept four parameters link, text, groups, rng and
         allows for user interaction. The groups are a dict containing 'title',
         'section', 'label' and 'linktrail' and the rng are the start and end
@@ -845,11 +839,11 @@ def replace_links(text: str, replace, site: pywikibot.site.BaseSite) -> str:
         the result by the callable. It'll convert that into a callable where
         the first item (the Link or Page) has to be equal to the found link and
         in that case it will apply the second value from the sequence.
-    :type replace: sequence of pywikibot.Page/pywikibot.Link/str or
+    :type replace: Sequence of pywikibot.Page/pywikibot.Link/str or
         callable
-    :param site: a Site object to use. It should match the origin or
+    :param site: A Site object to use. It should match the origin or
         target site of the text
-    :raises TypeError: missing positional argument 'site'
+    :raises TypeError: Missing positional argument 'site'
     :raises ValueError: Wrong site type
     :raises ValueError: Wrong replacement number
     :raises ValueError: Wrong replacement types
@@ -1053,12 +1047,12 @@ def replace_links(text: str, replace, site: pywikibot.site.BaseSite) -> str:
 def add_text(text: str, add: str, *, site=None) -> str:
     """Add text to a page content above categories and interwiki.
 
-    .. versionadded:: 6.4
+    .. version-added:: 6.4
 
     :param text: The page content to add text to.
     :param add: Text to add.
     :param site: The site that the text is coming from. Required for
-        reorder of categories and interlanguage links. Te default site
+        reorder of categories and interlanguage links. The default site
         is used otherwise.
     :type site: pywikibot.Site
     """
@@ -1101,7 +1095,7 @@ class Section(NamedTuple):
 
     """A namedtuple as part of :class:`Content` describing a page section.
 
-    .. versionchanged:: 8.2
+    .. version-changed:: 8.2
        ``_Section`` becomes a public class.
     """
 
@@ -1112,7 +1106,7 @@ class Section(NamedTuple):
     def level(self) -> int:
         """Return the section level.
 
-        .. versionadded:: 8.2
+        .. version-added:: 8.2
         """
         m = HEAD_PATTERN.match(self.title)
         return len(m[1])
@@ -1121,10 +1115,13 @@ class Section(NamedTuple):
     def heading(self) -> str:
         """Return the section title without equal signs.
 
-        .. versionadded:: 8.2
+        .. version-added:: 8.2
+        .. version-changed:: 11.0
+           Invisible chars like LTR or RTO are removed.
         """
         level = self.level
-        return self.title[level:-level].strip()
+        title = self.title[level:-level].strip()
+        return INVISIBLE_REGEX.sub('', title)
 
 
 class SectionList(list):
@@ -1134,7 +1131,7 @@ class SectionList(list):
     Introduced for handling lists of sections with custom lookup by
     :attr:`Section.heading` and :attr:`level<Section.level>`.
 
-    .. versionadded:: 10.4
+    .. version-added:: 10.4
     """
 
     def __contains__(self, value: object) -> bool:
@@ -1226,7 +1223,7 @@ class Content(NamedTuple):
 
     """A namedtuple as result of :func:`extract_sections` holding page content.
 
-    .. versionchanged:: 8.2
+    .. version-changed:: 8.2
        ``_Content`` becomes a public class.
     """
 
@@ -1240,7 +1237,7 @@ class Content(NamedTuple):
 
         The first main title is anything enclosed within triple quotes.
 
-        .. versionadded:: 8.2
+        .. version-added:: 8.2
         """
         m = TITLE_PATTERN.search(self.header)
         return m[1].strip() if m else ''
@@ -1341,11 +1338,11 @@ def extract_sections(
 
     .. note:: sections and text from templates are not extracted but
        embedded as plain text.
-    .. versionadded:: 3.0
-    .. versionchanged:: 8.2
+    .. version-added:: 3.0
+    .. version-changed:: 8.2
        The :class:`Content` and :class:`Section` class have additional
        properties.
-    .. versionchanged:: 10.4
+    .. version-changed:: 10.4
        Added custom ``index()``, ``count()`` and ``in`` operator support
        for :attr:`Content.sections`.
 
@@ -1513,14 +1510,17 @@ def removeLanguageLinksAndSeparator(text: str, site=None, marker: str = '',
     return removeLanguageLinks(text, site, marker)
 
 
-@deprecated_args(addOnly='add_only')  # since 8.0
 def replaceLanguageLinks(oldtext: str,
-                         new: dict,
+                         new: Mapping[pywikibot.site.BaseSite,
+                                      pywikibot.Page | pywikibot.Link],
                          site: pywikibot.site.BaseSite | None = None,
                          add_only: bool = False,
                          template: bool = False,
                          template_subpage: bool = False) -> str:
     """Replace inter-language links in the text with a new set of links.
+
+    .. version-changed:: 8.0
+       *addOnly* was renamed to *add_only*.
 
     :param oldtext: The text that needs to be modified.
     :param new: A dict with the Site objects as keys, and Page or Link
@@ -1636,13 +1636,13 @@ def replaceLanguageLinks(oldtext: str,
 def interwikiFormat(links: dict, insite=None) -> str:
     """Convert interwiki link dict into a wikitext string.
 
-    :param links: interwiki links to be formatted
-    :type links: dict with the Site objects as keys, and Page or Link
+    :param links: Interwiki links to be formatted
+    :type links: Dict with the Site objects as keys, and Page or Link
         objects as values.
-    :param insite: site the interwiki links will be formatted for
+    :param insite: Site the interwiki links will be formatted for
         (defaulting to the current site).
     :type insite: BaseSite
-    :return: string including wiki links formatted for inclusion in
+    :return: String including wiki links formatted for inclusion in
         insite
     """
     if not links:
@@ -1701,9 +1701,9 @@ def getCategoryLinks(text: str, site=None,
                      expand_text: bool = False) -> list[pywikibot.Category]:
     """Return a list of category links found in text.
 
-    :param include: list of tags which should not be removed by
+    :param include: List of tags which should not be removed by
         removeDisabledParts() and where CategoryLinks can be searched.
-    :return: all category links found
+    :return: All category links found
     """
     result = []
     if site is None:
@@ -1797,11 +1797,13 @@ def replaceCategoryInPlace(oldtext, oldcat, newcat, site=None,
     """Replace old category with new one and return the modified text.
 
     :param oldtext: Content of the old category
-    :param oldcat: pywikibot.Category object of the old category
-    :param newcat: pywikibot.Category object of the new category
+    :param oldcat: :class:`pywikibot.Category` object of the old
+        category
+    :param newcat: :class:`Pywikibot.Category` object of the new
+        category
     :param add_only: If add_only is True, the old category won't be
         replaced and the category given will be added after it.
-    :return: the modified text
+    :return: The modified text
     """
     if site is None:
         site = pywikibot.Site()
@@ -1844,12 +1846,14 @@ def replaceCategoryInPlace(oldtext, oldcat, newcat, site=None,
     return text
 
 
-@deprecated_args(addOnly='add_only')  # since 8.0
 def replaceCategoryLinks(oldtext: str,
                          new: Iterable,
                          site: pywikibot.site.BaseSite | None = None,
                          add_only: bool = False) -> str:
     """Replace all existing category links with new category links.
+
+    .. version-changed:: 8.0
+       *addOnly* was renamed to *add_only*.
 
     :param oldtext: The text that needs to be replaced.
     :param new: Should be a list of Category objects or strings
@@ -1942,7 +1946,7 @@ def categoryFormat(categories, insite=None) -> str:
 
     :param categories: A list of Category or Page objects or strings which can
         be either the raw name, [[Category:..]] or [[cat_localised_ns:...]].
-    :type categories: iterable
+    :type categories: Iterable
     :param insite: Used to to localise the category namespace.
     :type insite: pywikibot.Site
     :return: String of categories
@@ -2019,7 +2023,7 @@ def extract_templates_and_params(
     text: str,
     remove_disabled_parts: bool = False,
     strip: bool = False,
-) -> list[tuple[str, OrderedDictType[str, str]]]:
+) -> list[tuple[str, OrderedDict[str, str]]]:
     """Return a list of templates found in text.
 
     Return value is a list of tuples. There is one tuple for each use of a
@@ -2045,15 +2049,18 @@ def extract_templates_and_params(
     To replicate that behaviour, enable both `remove_disabled_parts`
     and `strip` parameters.
 
+    .. version-changed:: 6.1
+       *wikitextparser* package is supported; either *wikitextparser* or
+       *mwparserfromhell* is strictly recommended.
+    .. version-changed:: 11.1
+       Raise ModuleNotFoundError if no wikitext parser is installed.
+
     :param text: The wikitext from which templates are extracted
     :param remove_disabled_parts: If enabled, remove disabled wikitext
         such as comments and pre.
     :param strip: If enabled, strip arguments and values of templates.
-    :return: list of template name and params
-
-    .. versionchanged:: 6.1
-       *wikitextparser* package is supported; either *wikitextparser* or
-       *mwparserfromhell* is strictly recommended.
+    :return: List of template name and params
+    :raises ModuleNotFoundError: No wikitext parser is installed.
     """
     def explicit(param):
         try:
@@ -2061,6 +2068,9 @@ def extract_templates_and_params(
         except AttributeError:
             attr = not param.positional
         return attr
+
+    if isinstance(wikitextparser, Exception):
+        raise wikitextparser
 
     if remove_disabled_parts:
         text = removeDisabledParts(text)
@@ -2111,7 +2121,7 @@ def extract_templates_and_params_regex_simple(text: str):
     contains a '|', such as {{template|a={{b|c}} }}.
 
     :param text: The wikitext from which templates are extracted
-    :return: list of template name and params
+    :return: List of template name and params
     :rtype: list of tuple of name and OrderedDict
     """
     result = []
@@ -2165,7 +2175,7 @@ def does_text_contain_section(pagetext: str, section: str) -> bool:
     text link e.g. for categories and files.
 
     :param pagetext: The wikitext of a page
-    :param section: a section of a page including wikitext markups
+    :param section: A section of a page including wikitext markups
     """
     # match preceding colon for text links
     section = re.sub(r'\\\[\\\[(\\?:)?', r'\[\[\:?', re.escape(section))
@@ -2178,10 +2188,10 @@ def does_text_contain_section(pagetext: str, section: str) -> bool:
 def reformat_ISBNs(text: str, match_func) -> str:
     """Reformat ISBNs.
 
-    :param text: text containing ISBNs
-    :param match_func: function to reformat matched ISBNs
-    :type match_func: callable
-    :return: reformatted text
+    :param text: Text containing ISBNs
+    :param match_func: Function to reformat matched ISBNs
+    :type match_func: Callable
+    :return: Reformatted text
     """
     isbnR = re.compile(r'(?<=ISBN )(?P<code>[\d\-]+[\dXx])')
     return isbnR.sub(match_func, text)
@@ -2200,21 +2210,21 @@ class TimeStripperPatterns(NamedTuple):
 
     Attribute order is important to avoid mismatch when searching.
 
-    .. versionadded:: 8.0
+    .. version-added:: 8.0
     """
 
-    time: Pattern[str]
-    tzinfo: Pattern[str]
-    year: Pattern[str]
-    month: Pattern[str]
-    day: Pattern[str]
+    time: re.Pattern[str]
+    tzinfo: re.Pattern[str]
+    year: re.Pattern[str]
+    month: re.Pattern[str]
+    day: re.Pattern[str]
 
 
 class TimeStripper:
 
     """Find timestamp in page and return it as pywikibot.Timestamp object.
 
-    .. versionchanged:: 8.0
+    .. version-changed:: 8.0
        *group* attribute is a set instead of a list.
        *patterns* is a :class:`TimeStripperPatterns` namedtuple instead
        of a list.
@@ -2234,8 +2244,8 @@ class TimeStripper:
 
         self.origNames2monthNum = {}
         # use first_lower/first_upper for those language where month names
-        # were changed: T324310, T356175
-        if self.site.lang in ('hy', 'vi'):
+        # were changed: T324310, T356175, T415880
+        if self.site.lang in ('hy', 'it', 'vi'):
             functions = [first_upper, first_lower]
         else:
             functions = [str]
@@ -2251,7 +2261,7 @@ class TimeStripper:
 
         timeR = (r'(?P<time>(?P<hour>([0-1]\d|2[0-3]))[:\.h]'
                  r'(?P<minute>[0-5]\d))')
-        timeznR = r'\((?P<tzinfo>[A-Z]+)\)'
+        timeznR = r'\((?P<tzinfo>[^(){}\[\]:;#\t\n\r\f\v+-]+)\)'
         yearR = r'(?P<year>(19|20)\d\d)(?:{})?'.format('\ub144')
         # if months have 'digits' as names, they need to be
         # removed; will be handled as digits in regex, adding d+{1,2}\.?
@@ -2290,69 +2300,9 @@ class TimeStripper:
         self.tzinfo = TZoneFixedOffset(self.site.siteinfo['timeoffset'],
                                        self.site.siteinfo['timezone'])
 
-    @property
-    @deprecated('patterns.time', since='8.0.0')
-    def ptimeR(self):
-        """Deprecated time pattern attribute.
-
-        .. deprecated:: 8.0
-           use pattern.time instead
-        """
-        return self.patterns.time
-
-    @property
-    @deprecated('patterns.tzinfo', since='8.0.0')
-    def ptimeznR(self):
-        """Deprecated tzinfo pattern attribute.
-
-        .. deprecated:: 8.0
-           use patterns.tzinfo instead
-        """
-        return self.patterns.tzinfo
-
-    @property
-    @deprecated('patterns.year', since='8.0.0')
-    def pyearR(self):
-        """Deprecated year pattern attribute.
-
-        .. deprecated:: 8.0
-           use patterns.year instead
-        """
-        return self.patterns.year
-
-    @property
-    @deprecated('patterns.month', since='8.0.0')
-    def pmonthR(self):
-        """Deprecated month pattern attribute.
-
-        .. deprecated:: 8.0
-           use patterns.month instead
-        """
-        return self.patterns.month
-
-    @property
-    @deprecated('patterns.day', since='8.0.0')
-    def pdayR(self):
-        """Deprecated day pattern attribute.
-
-        .. deprecated:: 8.0
-           use patterns.day instead
-        """
-        return self.patterns.day
-
-    @property
-    @deprecated('textlib.TIMEGROUPS', since='8.0.0')
-    def groups(self):
-        """Deprecated groups attribute.
-
-        .. deprecated:: 8.0
-           use textlib.TIMEGROUPS instead
-        """
-        return TIMEGROUPS
-
     def _last_match_and_replace(self,
                                 txt: str,
-                                pat) -> tuple[str, Match[str] | None]:
+                                pat) -> tuple[str, re.Match[str] | None]:
         """Take the rightmost match and replace with marker.
 
         It does so to prevent spurious earlier matches.
@@ -2365,7 +2315,7 @@ class TimeStripper:
 
         m = all_matches[-1]
 
-        def marker(m: Match[str]):
+        def marker(m: re.Match[str]):
             """Replace exactly the same number of matched characters.
 
             Same number of chars shall be replaced, in order to be able
@@ -2413,7 +2363,7 @@ class TimeStripper:
         All the following items must be matched, otherwise None is
         returned: -. year, month, hour, time, day, minute, tzinfo
 
-        .. versionchanged:: 7.6
+        .. version-changed:: 7.6
            HTML parts are removed from line
 
         :return: A timestamp found on the given line

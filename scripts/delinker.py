@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+#
+# (C) Pywikibot team, 2006-2026
+#
+# Distributed under the terms of the MIT license.
+#
 """Delink removed files from wiki.
 
 This script keeps track of image deletions and delinks removed files
@@ -30,16 +35,11 @@ The following parameters are supported:
    don't want the default values you can add any option you want to
    change to that settings file below the [delinker] section like.
 
-.. versionadded:: 7.2
+.. version-added:: 7.2
    This script is completely rewritten from compat branch.
-.. versionchanged:: 9.4
+.. version-changed:: 9.4
    *-category* option was added.
 """
-#
-# (C) Pywikibot team, 2006-2024
-#
-# Distributed under the terms of the MIT license.
-#
 from __future__ import annotations
 
 import configparser
@@ -48,7 +48,6 @@ import re
 from difflib import get_close_matches
 
 import pywikibot
-from pywikibot.backports import removeprefix
 from pywikibot.bot import (
     AutomaticTWSummaryBot,
     ConfigParserBot,
@@ -232,7 +231,7 @@ def main(*args: str) -> None:
     local_args = pywikibot.handle_args()
     for arg in local_args:
         opt, _, value = arg.partition(':')
-        opt = removeprefix(opt, '-')
+        opt = opt.removeprefix('-')
         if opt == 'localonly':
             options[opt] = True
         elif opt == 'category':

@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
-"""Tests for the weblinkchecker script."""
 #
-# (C) Pywikibot team, 2025
+# (C) Pywikibot team, 2025-2026
 #
 # Distributed under the terms of the MIT license.
 #
+"""Tests for the weblinkchecker script."""
 from __future__ import annotations
 
+import unittest
 from contextlib import suppress
 
 import pywikibot
 from scripts.weblinkchecker import WeblinkCheckerRobot
-from tests.aspects import TestCase, unittest
+from tests.aspects import TestCase
 
 
 class TestWeblinkchecker(TestCase):

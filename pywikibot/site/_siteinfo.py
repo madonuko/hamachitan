@@ -1,9 +1,9 @@
-"""Objects representing site info data contents."""
 #
-# (C) Pywikibot team, 2008-2025
+# (C) Pywikibot team, 2008-2026
 #
 # Distributed under the terms of the MIT license.
 #
+"""Objects representing site info data contents."""
 from __future__ import annotations
 
 import copy
@@ -14,7 +14,6 @@ from contextlib import suppress
 from typing import TYPE_CHECKING, Any, Literal, cast
 
 import pywikibot
-from pywikibot.backports import Dict, List
 from pywikibot.exceptions import APIError
 from pywikibot.tools.collections import EMPTY_DEFAULT
 
@@ -33,7 +32,7 @@ class Siteinfo(Container):
 
     All values of the 'general' property  are directly available.
 
-    .. versionchanged:: 10.5
+    .. version-changed:: 10.5
        formatversion 2 is used for API calls.
 
     .. admonition:: Compatibility note
@@ -51,7 +50,7 @@ class Siteinfo(Container):
 
        :code:`'thumblimits': [120, 150, 180, 200, 220, 250, 300, 400]`
 
-    .. deprecated:: 10.5
+    .. version-deprecated:: 10.5
        Accessing the fallback '*' keys in 'languages', 'namespaces',
        'namespacealiases', and 'skins' properties are deprecated and
        will be removed in a future release of Pywikibot.
@@ -71,7 +70,7 @@ class Siteinfo(Container):
     def clear(self) -> None:
         """Clear all cached siteinfo properties.
 
-        .. versionadded:: 7.1
+        .. version-added:: 7.1
         """
         self._cache.clear()
 
@@ -82,7 +81,7 @@ class Siteinfo(Container):
 
         Modifies *data* in place.
 
-        .. versionchanged:: 10.5
+        .. version-changed:: 10.5
            Modify *data* for formatversion 1 compatibility and easier
            to use lists.
 
@@ -96,22 +95,22 @@ class Siteinfo(Container):
         # query this method to actually get the version number
 
         if prop == 'general':
-            data = cast(Dict[str, Any], data)
+            data = cast(dict[str, Any], data)
             for key in 'thumblimits', 'imagelimits':
                 data[key] = list(data[key].values())
             data['magiclinks'] = [k for k, v in data['magiclinks'].items()
                                   if v]
         elif prop == 'namespaces':
-            data = cast(Dict[str, Any], data)
+            data = cast(dict[str, Any], data)
             for ns_info in data.values():
                 ns_info['*'] = ns_info['name']
         elif prop in ('languages', 'namespacealiases'):
-            data = cast(List[Dict[str, Any]], data)
+            data = cast(list[dict[str, Any]], data)
             for ns_info in data:
                 key = 'name' if 'name' in ns_info else 'alias'
                 ns_info['*'] = ns_info[key]
         elif prop == 'skins':
-            data = cast(List[Dict[str, Any]], data)
+            data = cast(list[dict[str, Any]], data)
             for ns_info in data:
                 ns_info['*'] = ns_info['name']
                 for key in 'default', 'unusable':
@@ -334,7 +333,7 @@ class Siteinfo(Container):
     def is_cached(self, key: str) -> bool:
         """Return whether the value is cached.
 
-        .. versionadded:: 7.1
+        .. version-added:: 7.1
         """
         try:
             self._get_cached(key)
@@ -350,7 +349,7 @@ class Siteinfo(Container):
         like `key in container`.Only string keys are valid. Non-string
         keys always return False.
 
-        .. versionchanged:: 7.1
+        .. version-changed:: 7.1
            Previous implementation only checked for cached keys.
 
         :param key: The key to check for presence. Should be a string.

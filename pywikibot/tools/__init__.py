@@ -1,9 +1,9 @@
-"""Miscellaneous helper functions (not wiki-dependent)."""
 #
-# (C) Pywikibot team, 2008-2025
+# (C) Pywikibot team, 2008-2026
 #
 # Distributed under the terms of the MIT license.
 #
+"""Miscellaneous helper functions (not wiki-dependent)."""
 from __future__ import annotations
 
 import abc
@@ -14,6 +14,8 @@ import os
 import re
 import stat
 import subprocess
+import sys
+from collections.abc import Callable
 from contextlib import suppress
 from functools import total_ordering, wraps
 from types import TracebackType
@@ -23,7 +25,6 @@ from warnings import catch_warnings, showwarning, warn
 import packaging.version
 
 import pywikibot  # T306760
-from pywikibot.backports import PYTHON_VERSION, SPHINX_RUNNING, Callable
 from pywikibot.tools._deprecate import (
     ModuleDeprecationWrapper,
     add_decorated_full_name,
@@ -67,6 +68,7 @@ __all__ = (
     # other tools
     'PYTHON_VERSION',
     'SPHINX_RUNNING',
+    'THREADING_FREE',
     'as_filename',
     'is_ip_address',
     'is_ip_network',
@@ -86,15 +88,23 @@ __all__ = (
     'cached',
 )
 
+PYTHON_VERSION: tuple[int, int, int] = sys.version_info[:3]
+SPHINX_RUNNING: bool = 'sphinx' in sys.modules
+THREADING_FREE: bool
+if PYTHON_VERSION >= (3, 13):
+    THREADING_FREE = not sys._is_gil_enabled()
+else:
+    THREADING_FREE = False
+
 
 def is_ip_address(value: str) -> bool:
     """Check if a value is a valid IPv4 or IPv6 address.
 
-    .. versionadded:: 6.1
+    .. version-added:: 6.1
        Was renamed from ``is_IP()``.
     .. seealso:: :func:`is_ip_network`
 
-    :param value: value to check
+    :param value: Value to check
     """
     with suppress(ValueError):
         ipaddress.ip_address(value)
@@ -106,10 +116,10 @@ def is_ip_address(value: str) -> bool:
 def is_ip_network(value: str) -> bool:
     """Check if a value is a valid range of IPv4 or IPv6 addresses.
 
-    .. versionadded:: 9.0
+    .. version-added:: 9.0
     .. seealso:: :func:`is_ip_address`
 
-    :param value: value to check
+    :param value: Value to check
     """
     with suppress(ValueError):
         ipaddress.ip_network(value)
@@ -121,9 +131,9 @@ def is_ip_network(value: str) -> bool:
 def has_module(module: str, version: str | None = None) -> bool:
     """Check if a module can be imported.
 
-    .. versionadded:: 3.0
+    .. version-added:: 3.0
 
-    .. versionchanged:: 6.1
+    .. version-changed:: 6.1
        Dependency of distutils was dropped because the package will be
        removed with Python 3.12.
     """
@@ -160,7 +170,7 @@ class classproperty:  # noqa: N801
 
     Foo.bar gives 'baz'.
 
-    .. versionadded:: 3.0
+    .. version-added:: 3.0
     """
 
     def __init__(self, cls_method) -> None:
@@ -196,13 +206,13 @@ class suppress_warnings(catch_warnings):  # noqa: N801
     Those suppressed warnings that do not match the parameters will be
     raised shown upon exit.
 
-    .. versionadded:: 3.0
+    .. version-added:: 3.0
     """
 
     def __init__(
         self,
         message: str = '',
-        category=Warning,
+        category: type[Warning] = Warning,
         filename: str = ''
     ) -> None:
         """Initialize the object.
@@ -215,7 +225,6 @@ class suppress_warnings(catch_warnings):  # noqa: N801
             (case-insensitive)
         :param category: A class (a subclass of Warning) of which the
             warning category must be a subclass in order to match.
-        :type category: type
         :param filename: A string containing a regular expression that
             the start of the path to the warning module must match.
             (case-sensitive)
@@ -261,7 +270,7 @@ class ComparableMixin(abc.ABC):
 
     """Mixin class to allow comparing to other objects which are comparable.
 
-    .. versionadded:: 3.0
+    .. version-added:: 3.0
     """
 
     @abc.abstractmethod
@@ -270,7 +279,7 @@ class ComparableMixin(abc.ABC):
 
         This ensures that ``_cmpkey`` method is defined in subclass.
 
-        .. versionadded:: 8.1.2
+        .. version-added:: 8.1.2
         """
 
     def __lt__(self, other):
@@ -308,7 +317,7 @@ def first_lower(string: str) -> str:
     >>> first_lower('Hello World')
     'hello World'
 
-    .. versionadded:: 3.0
+    .. version-added:: 3.0
     """
     return string[:1].lower() + string[1:]
 
@@ -323,7 +332,7 @@ def first_upper(string: str) -> str:
     >>> first_upper('hello World')
     'Hello World'
 
-    .. versionadded:: 3.0
+    .. version-added:: 3.0
     .. note:: MediaWiki doesn't capitalize some characters the same way
        as Python. This function tries to be close to MediaWiki's
        capitalize function in title.php. See :phab:`T179115` and
@@ -362,10 +371,10 @@ def as_filename(string: str, repl: str = '_') -> str:
     ...
     ValueError: Invalid repl parameter '?'
 
-    .. versionadded:: 8.0
+    .. version-added:: 8.0
 
-    :param string: the string to be modified
-    :param repl: the replacement character
+    :param string: The string to be modified
+    :param repl: The replacement character
     :raises ValueError: Invalid repl parameter
     """
     pattern = r':*?/\\" '
@@ -391,7 +400,7 @@ def strtobool(val: str) -> bool:
     ...
     ValueError: invalid truth value 'aye'
 
-    .. versionadded:: 7.1
+    .. version-added:: 7.1
 
     :param val: True values are 'y', 'yes', 't', 'true', 'on', and '1';
         false values are 'n', 'no', 'f', 'false', 'off', and '0'.
@@ -408,7 +417,7 @@ def strtobool(val: str) -> bool:
 def normalize_username(username) -> str | None:
     """Normalize the username.
 
-    .. versionadded:: 3.0
+    .. version-added:: 3.0
     """
     if not username:
         return None
@@ -437,9 +446,9 @@ class MediaWikiVersion:
 
     Any other suffixes are considered invalid.
 
-    .. versionadded:: 3.0
+    .. version-added:: 3.0
 
-    .. versionchanged:: 6.1
+    .. version-changed:: 6.1
        Dependency of distutils was dropped because the package will be
        removed with Python 3.12.
     """
@@ -450,7 +459,7 @@ class MediaWikiVersion:
     def __init__(self, version_str: str) -> None:
         """Initializer.
 
-        :param version_str: version to parse
+        :param version_str: Version to parse
         """
         self._parse(version_str)
 
@@ -506,7 +515,7 @@ class MediaWikiVersion:
     def __repr__(self) -> str:
         """Return version number representation, mainly used by tests.
 
-        .. versionadded:: 10.0
+        .. version-added:: 10.0
         """
         return f"'{self}'"
 
@@ -543,15 +552,15 @@ def open_archive(filename: str, mode: str = 'rb', use_extension: bool = True):
     The compression is either selected via the magic number or file
     ending.
 
-    .. versionadded:: 3.0
+    .. version-added:: 3.0
 
     :param filename: The filename.
-    :param use_extension: Use the file extension instead of the magic
-        number to determine the type of compression (default True). Must
-        be True when writing or appending.
     :param mode: The mode in which the file should be opened. It may
         either be 'r', 'rb', 'a', 'ab', 'w' or 'wb'. All modes open the
         file in binary mode. It defaults to 'rb'.
+    :param use_extension: Use the file extension instead of the magic
+        number to determine the type of compression (default True). Must
+        be True when writing or appending.
     :raises ValueError: When 7za is not available or the opening mode is
         unknown or it tries to write a 7z archive.
     :raises FileNotFoundError: When the filename doesn't exist and it
@@ -642,7 +651,7 @@ def merge_unique_dicts(*args, **kwargs):
     also possible to define an additional dict using the keyword
     arguments.
 
-    .. versionadded:: 3.0
+    .. version-added:: 3.0
     """
     args = [*list(args), dict(kwargs)]
     conflicts = set()
@@ -665,12 +674,12 @@ def file_mode_checker(
 ) -> None:
     """Check file mode and update it, if needed.
 
-    .. versionadded:: 3.0
+    .. version-added:: 3.0
 
-    :param filename: filename path
-    :param mode: requested file mode
-    :param quiet: warn about file mode change if False.
-    :param create: create the file if it does not exist already
+    :param filename: Filename path
+    :param mode: Requested file mode
+    :param quiet: Warn about file mode change if False.
+    :param create: Create the file if it does not exist already
     :raise IOError: The file does not exist and `create` is False.
     """
     try:
@@ -697,23 +706,23 @@ def compute_file_hash(filename: str | os.PathLike,
 
     Result is expressed as hexdigest().
 
-    .. versionadded:: 3.0
-    .. versionchanged:: 8.2
-       *sha* may be  also a hash constructor, or a callable that returns
-       a hash object.
+    .. version-added:: 3.0
+     .. version-changed:: 8.2
+         The *sha* parameter may also be a hash constructor, or a callable
+         that returns a hash object.
 
 
-    :param filename: filename path
-    :param sha: hash algorithm available with hashlib: ``sha1()``,
+    :param filename: Filename path
+    :param sha: Hash algorithm available with hashlib: ``sha1()``,
         ``sha224()``, ``sha256()``, ``sha384()``, ``sha512()``,
         ``blake2b()``, and ``blake2s()``. Additional algorithms like
         ``md5()``, ``sha3_224()``, ``sha3_256()``, ``sha3_384()``,
         ``sha3_512()``, ``shake_128()`` and ``shake_256()`` may also be
-        available. *sha* must either be a hash algorithm name as a str
-        like ``'sha1'`` (default), a hash constructor like
+        available. The *sha* parameter must either be a hash algorithm
+        name as a str like ``'sha1'`` (default), a hash constructor like
         ``hashlib.sha1``, or a callable that returns a hash object like
         ``lambda: hashlib.sha1()``.
-    :param bytes_to_read: only the first bytes_to_read will be
+    :param bytes_to_read: Only the first bytes_to_read will be
         considered; if file size is smaller, the whole file will be
         considered.
     """
@@ -756,9 +765,9 @@ def cached(*arg: Callable) -> Any:
     .. note:: A property must be decorated on top of the property method
        below other decorators. This decorator must not be used with
        functions.
-    .. versionadded:: 7.3
+    .. version-added:: 7.3
 
-    :raises TypeError: decorator must be used without arguments
+    :raises TypeError: Decorator must be used without arguments
     """
     fn = arg and arg[0]
     if not callable(fn):

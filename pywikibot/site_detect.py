@@ -1,9 +1,9 @@
-"""Classes for detecting a MediaWiki site."""
 #
-# (C) Pywikibot team, 2010-2024
+# (C) Pywikibot team, 2010-2026
 #
 # Distributed under the terms of the MIT license.
 #
+"""Classes for detecting a MediaWiki site."""
 from __future__ import annotations
 
 import json
@@ -17,7 +17,6 @@ from requests import JSONDecodeError
 from requests.exceptions import RequestException
 
 import pywikibot
-from pywikibot.backports import removesuffix
 from pywikibot.comms.http import fetch
 from pywikibot.exceptions import ClientError, ServerError
 from pywikibot.tools import MediaWikiVersion
@@ -42,7 +41,7 @@ class MWSite:
         :raises RuntimeError: Version not found or version less than
             1.31
         """
-        fromurl = removesuffix(fromurl, '$1')
+        fromurl = fromurl.removesuffix('$1')
 
         r = fetch(fromurl, **kwargs)
         check_response(r)
@@ -276,11 +275,11 @@ class WikiHTMLPageParser(HTMLParser):
 def check_response(response) -> None:
     """Raise ClientError or ServerError depending on http status.
 
-    .. versionadded:: 3.0
-    .. versionchanged:: 7.0
+    .. version-added:: 3.0
+    .. version-changed:: 7.0
        Raise a generic :class:`exceptions.ServerError` if http status
        code is not IANA-registered but unofficial code
-    .. versionchanged:: 8.1
+    .. version-changed:: 8.1
        Raise a :class:`exceptions.ClientError` if status code is 4XX
     """
     for status_code, err_class, err_type in [

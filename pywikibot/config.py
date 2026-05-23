@@ -1,10 +1,15 @@
+#
+# (C) Pywikibot team, 2003-2026
+#
+# Distributed under the terms of the MIT license.
+#
 """Module to define pywikibot configuration default and user preferences.
 
 User preferences are loaded from a python file called `user-config.py`,
 which may be located in directory specified by the environment variable
 `PYWIKIBOT_DIR`, or the same directory as `pwb.py`, or in a directory
 within the users home. See :py:obj:`get_base_dir` for more information.
-The different file name can specified with global `-config` option.
+A different file name can be specified with the global `-config` option.
 
 If user config file cannot be found in any of those locations, this
 module will fail to load unless the environment variable
@@ -26,17 +31,12 @@ utility methods to build paths relative to base_dir:
  - datafilepath
  - shortpath
 
-.. versionchanged:: 6.2
+.. version-changed:: 6.2
    config2 was renamed to config
-.. versionchanged:: 8.0
+.. version-changed:: 8.0
    Editor settings has been revised. *editor* variable is None by
    default. Editor detection functions were moved to :mod:`editor`.
 """
-#
-# (C) Pywikibot team, 2003-2025
-#
-# Distributed under the terms of the MIT license.
-#
 from __future__ import annotations
 
 import collections
@@ -47,6 +47,7 @@ import re
 import stat
 import sys
 import types
+from collections.abc import Mapping
 from locale import getlocale
 from os import environ, getenv
 from pathlib import Path
@@ -56,17 +57,11 @@ from warnings import warn
 from zipfile import ZipFile, is_zipfile
 
 from pywikibot.__metadata__ import __version__ as pwb_version
-from pywikibot.backports import (
-    DefaultDict,
-    Mapping,
-    removeprefix,
-    removesuffix,
-)
 from pywikibot.logging import error, info, warning
 
 
 if TYPE_CHECKING:
-    _DabComDict = DefaultDict[str, dict[str, str]]
+    _DabComDict = collections.defaultdict[str, dict[str, str]]
 
 _ValueType = TypeVar('_ValueType')
 
@@ -140,11 +135,11 @@ disambiguation_comment: _DabComDict = collections.defaultdict(dict)
 # User agent format.
 # For the meaning and more help in customization see:
 # https://www.mediawiki.org/wiki/Manual:Pywikibot/User-agent
-user_agent_format = ('{script_product} ({script_comments}) {pwb} ({revision}) '
-                     '{http_backend} {python}')
+user_agent_format = ('{username}/{script} ({script_comments}) {pwb} '
+                     '({revision}) {python} {http_backend}')
 
 # User agent description
-# This is a free-form string that can be user to describe specific bot/tool,
+# This is a free-form string that can be used to describe specific bot/tool,
 # provide contact information, etc.
 user_agent_description: str | None = None
 # Fake user agent.
@@ -286,7 +281,7 @@ def user_home_path(path: str) -> str:
 def get_user_config_file() -> str:
     """Return user config file name.
 
-    .. versionadded:: 7.7
+    .. version-added:: 7.7
     """
     for arg in sys.argv[1:]:
         opt, _, value = arg.partition(':')
@@ -318,13 +313,13 @@ def get_base_dir(test_directory: str | None = None,
     Set `PYWIKIBOT_NO_USER_CONFIG=1` to disable loading user config file
     (`user-config.py`) or install Pywikibot as a site-package.
 
-    .. versionchanged:: 7.7
+    .. version-changed:: 7.7
        Added the *config_file* parameter.
 
     :param test_directory: Assume that a user config file exists in this
         directory. Used to test whether placing a user config file in this
         directory will cause it to be selected as the base directory.
-    :param config_file: filename of the user config file
+    :param config_file: Filename of the user config file
     """
     def exists(directory: str) -> bool:
         directory = os.path.abspath(directory)
@@ -338,7 +333,7 @@ def get_base_dir(test_directory: str | None = None,
     base_dir = ''
     for arg in sys.argv[1:]:
         if arg.startswith('-dir:'):
-            base_dir = removeprefix(arg, '-dir:')
+            base_dir = arg.removeprefix('-dir:')
             base_dir = os.path.expanduser(base_dir)
             break
     else:
@@ -413,14 +408,14 @@ for arg in sys.argv[1:]:
         info('The base directory is ' + base_dir)
         info('The user config file is ' + user_config_file)
         break
-family_files = {}
+family_files: dict[str, str] = {}
 
 
 def register_families_folder(folder_path: str,
                              not_exists_ok: bool = False) -> None:
     """Register all family class files contained in a directory.
 
-    .. versionadded:: 7.0
+    .. version-added:: 7.0
        The *not_exists_ok* parameter
 
     :param folder_path: The path of a folder containing family files.
@@ -440,7 +435,7 @@ def register_families_folder(folder_path: str,
     if os.path.isdir(folder_path):
         for file_name in os.listdir(folder_path):
             if file_name.endswith(suffix):
-                family_name = removesuffix(file_name, suffix)
+                family_name = file_name.removesuffix(suffix)
                 family_files[family_name] = os.path.join(folder_path,
                                                          file_name)
         return
@@ -462,7 +457,7 @@ def register_families_folder(folder_path: str,
     for file_name in zip_file.namelist():
         if file_name.endswith(suffix):
             file_path = Path(file_name)
-            family_name = removesuffix(file_path.name, suffix)
+            family_name = file_path.name.removesuffix(suffix)
             family_files[family_name] = os.path.join(folder_path,
                                                      file_path.name)
 
@@ -708,14 +703,16 @@ upload_to_commons = False
 
 # ############# SETTINGS TO AVOID SERVER OVERLOAD ##############
 
-# Slow down the robot such that it never requests a second page within
-# 'minthrottle' seconds. This can be lengthened if the server is slow,
-# but never more than 'maxthrottle' seconds. However - if you are running
-# more than one bot in parallel the times are lengthened.
+# Slow down the bot so that it never issues two API requests within
+# 'minthrottle' seconds. This delay may be increased if the server is slow
+# or requests are limited by bot policy, but never beyond 'maxthrottle'
+# seconds. When running multiple bots in parallel, the effective waiting
+# time is increased accordingly. The default setting is 0.1 seconds per
+# https://wikitech.wikimedia.org/wiki/Robot_policy.
 #
 # 'maxlag' is used to control the rate of server access (see below).
 # Set minthrottle to non-zero to use a throttle on read access.
-minthrottle = 0
+minthrottle = 0.1
 maxthrottle = 60
 
 # Slow down the robot such that it never makes a second page edit within
@@ -803,9 +800,9 @@ cosmetic_changes = False
 # foreign wiki, set cosmetic_changes_mylang_only to False, but be careful!
 cosmetic_changes_mylang_only = True
 
-# The dictionary cosmetic_changes_enable should contain a tuple of languages
-# for each site where you wish to enable in addition to your own langlanguage
-# (if cosmetic_changes_mylang_only is set)
+# The dictionary cosmetic_changes_enable should contain a tuple of site codes
+# for each site where you wish to enable in addition to your own mylang code
+# if cosmetic_changes_mylang_only is set.
 # Please set your dictionary by adding such lines to your user config file:
 # cosmetic_changes_enable['wikipedia'] = ('de', 'en', 'fr')
 cosmetic_changes_enable: dict[str, tuple[str, ...]] = {}
@@ -830,7 +827,7 @@ cosmetic_changes_deny_script = ['category_redirect', 'cosmetic_changes',
 # ############# REPLICATION BOT SETTINGS ################
 # You can add replicate_replace to your user config file.
 #
-# Use has the following format:
+# Use the following format:
 #
 # replicate_replace = {
 #            'wikipedia:li': {'Hoofdpagina': 'Veurblaad'}
@@ -862,13 +859,13 @@ max_queue_size = 64
 
 # Pickle protocol version to use for storing dumps.
 # This config variable is not used for loading dumps.
-# Version 0 is a more or less human-readable protocol
-# Version 2 is common to both Python 2 and 3, and should
-# be used when dumps are accessed by both versions.
+# Version 0 is a more or less human-readable protocol.
+# Version 1 is an old binary format.
+# Version 2 is common to both Python 2 and 3. Default for Pywikibot 1–10.
 # Version 3 is only available for Python 3
 # Version 4 is only available for Python 3.4+
-# Version 5 was added with Python 3.8
-pickle_protocol = 2
+# Version 5 was added with Python 3.8. It is the default since Pywikibot 11.
+pickle_protocol = 5
 
 # ============================
 # End of configuration section
@@ -888,8 +885,8 @@ def makepath(path: str, create: bool = True) -> str:
 
     from holger@trillke.net 2002/03/18
 
-    :param path: path in the filesystem
-    :param create: create the directory if it is True. Otherwise do not
+    :param path: Path in the filesystem
+    :param create: Create the directory if it is True. Otherwise do not
         change the filesystem. Default is True.
     """
     dpath = os.path.normpath(os.path.dirname(path))
@@ -906,8 +903,8 @@ def datafilepath(*filename: str, create: bool = True) -> str:
     directories in the path that do not already exist are created if
     create is True, otherwise the filesystem keeps unchanged.
 
-    :param filename: path in the filesystem
-    :param create: create the directory if it is True. Otherwise don't
+    :param filename: Path in the filesystem
+    :param create: Create the directory if it is True. Otherwise don't
         change the filesystem. Default is True.
     """
     return makepath(os.path.join(base_dir, *filename), create=create)
@@ -992,9 +989,10 @@ def _assert_types(
 
 
 DEPRECATED_VARIABLE = (
-    f'"{{}}" present in your {user_config_file} is no longer a supported'
-    ' configuration variable and should be removed. Please inform the'
-    ' maintainers if you depend on it.'
+    '"{name}" present in your '
+    f'{user_config_file} is deprecated since'
+    ' {since} and no longer a supported configuration variable and should be'
+    ' removed. Please inform the maintainers if you depend on it.'
 )
 
 
@@ -1018,7 +1016,11 @@ def _check_user_config_types(
                 user_config[name] = value
         elif not name.startswith('_') and name not in skipped:
             if name in _deprecated_variables:
-                warn('\n' + fill(DEPRECATED_VARIABLE.format(name)),
+                msg = DEPRECATED_VARIABLE.format(
+                    name=name,
+                    since=_deprecated_variables[name]
+                )
+                warn('\n' + fill(msg),
                      _ConfigurationDeprecationWarning, stacklevel=2)
             else:
                 warn('\n' + fill(f'Configuration variable "{name}" is defined '
@@ -1034,15 +1036,29 @@ _check_user_config_types(_exec_globals, _public_globals, _imports)
 _modified = {_key for _key in _public_globals
              if _exec_globals[_key] != globals()[_key]}
 
+# UA variables deprecated since Pywikibot 11
 if 'user_agent_format' in _modified:
-    _right_user_agent_format = re.sub(r'{httplib2(:|})', r'{http_backend\1',
-                                      _exec_globals['user_agent_format'])
+    _right_user_agent_format = _exec_globals['user_agent_format']
+    _right_user_agent_format, _number_of_subs_made = re.subn(
+        r'\{(lang|code|family)\}', '{site}', _right_user_agent_format, count=1)
+    if _number_of_subs_made:
+        _right_user_agent_format = re.sub(
+            r'\{(lang|code|family)\}', '', _right_user_agent_format)
+    _right_user_agent_format = re.sub(
+        r'\{script_product\}', '{script}', _right_user_agent_format)
+    _right_user_agent_format = re.sub(
+        r'\{version\}', '{revision}', _right_user_agent_format)
+    msg = """
+Deprecated placeholders in "user_agent_format" detected since Pywikibot 11.0:
+- The first occurrence of "{lang}", "{code}" or "{family}" is replaced with
+  "{site}", others are removed.
+- All occurrences of "{script_product}" replaced with "{script}".
+- All occurrences of "{version}" replaced with "{revision}".
+"""
     if _right_user_agent_format != _exec_globals['user_agent_format']:
-        warn('`{httplib2}` in user_agent_format is deprecated, '
-             'will replace `{httplib2}` with `{http_backend}`',
-             _ConfigurationDeprecationWarning, stacklevel=2)
+        warn(msg, _ConfigurationDeprecationWarning, stacklevel=2)
         _exec_globals['user_agent_format'] = _right_user_agent_format
-    del _right_user_agent_format
+    del _right_user_agent_format, _number_of_subs_made
 
 for _key in _modified:
     globals()[_key] = _exec_globals[_key]

@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+#
+# (C) Pywikibot team, 2012-2026
+#
+# Distributed under the terms of the MIT license.
+#
 """This bot replicates pages in a wiki to a second wiki within one family.
 
 Example:
@@ -9,7 +14,7 @@ Example:
 
 or::
 
-    python pwb.py replicate_wiki [-r] -ns 10 -family:wikipedia -lang:nl li fy
+    python pwb.py replicate_wiki [-r] -ns 10 -family:wikipedia -code:nl li fy
 
 to copy all templates from nlwiki to liwiki and fywiki. It will show
 which pages have to be changed if -r is not present, and will only
@@ -33,7 +38,7 @@ The following parameters are supported:
 -r, --replace           actually replace pages (without this option
                         you will only get an overview page)
 
--o, --original          original wiki (you may use -lang:<code> option
+-o, --original          original wiki (you may use -code:<code> option
                         instead)
 -ns, --namespace        specify namespace
 
@@ -41,11 +46,6 @@ The following parameters are supported:
 
 destination_wiki        destination wiki(s)
 """
-#
-# (C) Pywikibot team, 2012-2024
-#
-# Distributed under the terms of the MIT license.
-#
 from __future__ import annotations
 
 import sys

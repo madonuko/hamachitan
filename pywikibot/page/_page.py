@@ -1,3 +1,8 @@
+#
+# (C) Pywikibot team, 2008-2026
+#
+# Distributed under the terms of the MIT license.
+#
 """Objects representing a MediaWiki page.
 
 Various Wikibase pages are defined in ``page._wikibase.py``,
@@ -8,11 +13,6 @@ various pages for Proofread Extensions are defined in
    :class:`pywikibot.Page` objects (defined here) represent the page
    itself, including its contents.
 """
-#
-# (C) Pywikibot team, 2008-2025
-#
-# Distributed under the terms of the MIT license.
-#
 from __future__ import annotations
 
 import pywikibot
@@ -26,7 +26,7 @@ from pywikibot.exceptions import (
     UnknownExtensionError,
 )
 from pywikibot.page._basepage import BasePage
-from pywikibot.page._toolforge import WikiBlameMixin
+from pywikibot.page._toolforge import WikiBlameMixin, WikiWhoMixin
 from pywikibot.site import Namespace
 from pywikibot.tools import cached, deprecated_args
 
@@ -34,7 +34,7 @@ from pywikibot.tools import cached, deprecated_args
 __all__ = ['Page']
 
 
-class Page(BasePage, WikiBlameMixin):
+class Page(BasePage, WikiBlameMixin, WikiWhoMixin):
 
     """Page: A MediaWiki page."""
 
@@ -133,18 +133,18 @@ class Page(BasePage, WikiBlameMixin):
     ) -> None:
         """Change the page's text to point to the redirect page.
 
-        .. versionchanged:: 9.3
+        .. version-changed:: 9.3
            *botflag* keyword parameter was renamed to *bot*.
 
-        :param target_page: target of the redirect, this argument is
+        :param target_page: Target of the redirect, this argument is
             required.
-        :param create: if true, it creates the redirect even if the page
+        :param create: If true, it creates the redirect even if the page
             doesn't exist.
-        :param force: if true, it set the redirect target even the page
+        :param force: If true, it set the redirect target even the page
             doesn't exist or it's not redirect.
-        :param keep_section: if the old redirect links to a section
+        :param keep_section: If the old redirect links to a section
             and the new one doesn't it uses the old redirect's section.
-        :param save: if true, it saves the page immediately.
+        :param save: If true, it saves the page immediately.
         :param kwargs: Arguments which are used for saving the page
             directly afterwards, like *summary* for edit summary.
         """
@@ -188,7 +188,7 @@ class Page(BasePage, WikiBlameMixin):
         Return the first 'preferred' ranked Claim specified by Wikibase
         property or the first 'normal' one otherwise.
 
-        .. versionadded:: 3.0
+        .. version-added:: 3.0
 
         .. seealso:: :meth:`pywikibot.ItemPage.get_best_claim`
 

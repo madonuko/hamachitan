@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+#
+# (C) Pywikibot team, 2011-2026
+#
+# Distributed under the terms of the MIT license.
+#
 """The bot is meant to mark the edits based on info obtained by whitelist.
 
 This bot obtains a list of recent changes and newpages and marks the
@@ -39,22 +44,17 @@ Commandline parameters:
                    (default for any project except Wikipedia Projects)
 -usercontribs      Filter generators above to the given user
 """
-#
-# (C) Pywikibot team, 2011-2024
-#
-# Distributed under the terms of the MIT license.
-#
 from __future__ import annotations
 
 import time
 from collections import defaultdict
+from collections.abc import Container
 from contextlib import suppress
 
 import mwparserfromhell
 
 import pywikibot
 from pywikibot import pagegenerators
-from pywikibot.backports import Container, removeprefix
 from pywikibot.bot import BaseBot, suggest_help
 from pywikibot.site import Namespace
 
@@ -269,7 +269,7 @@ class PatrolBot(BaseBot):
             author_ns = self.site.family.authornamespaces[self.site.lang][0]
 
         author_ns_prefix = self.site.namespace(author_ns) + ':'
-        author_page_name = removeprefix(title, author_ns_prefix)
+        author_page_name = title.removeprefix(author_ns_prefix)
         if title != author_page_name:
             verbose_output('Found author ' + author_page_name)
             return True

@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+#
+# (C) Pywikibot team, 2010-2026
+#
+# Distributed under the terms of the MIT license.
+#
 """This script generates a family file from a given URL.
 
 This script must be invoked with the pwb wrapper script/code entry point.
@@ -13,7 +18,7 @@ omitted if there is no successor parameter. The parameters are::
     <url>:         an url from where the family settings are loaded
     <name>:        the family name without "_family.py" tail.
     <dointerwiki>: predefined answer (y|s|n) to add multiple site codes
-    <verify>:      disable certificate validaton `(y|n)
+    <verify>:      disable certificate validation `(y|n)
 
 Example::
 
@@ -22,20 +27,15 @@ Example::
 This will create the file mywiki_family.py in families folder of your
 base directory.
 
-.. versionchanged:: 7.0
+.. version-changed:: 7.0
    moved to pywikibot.scripts folder; create family files in families
    folder of your base directory instead of pywikibot/families.
-.. versionchanged:: 8.1
+.. version-changed:: 8.1
    [s]trict can be given for <dointerwiki> parameter to ensure that
    sites are from the given domain.
-.. versionchanged:: 8.4
+.. version-changed:: 8.4
    If the url scheme is missing, ``https`` will be used.
 """
-#
-# (C) Pywikibot team, 2010-2025
-#
-# Distributed under the terms of the MIT license.
-#
 from __future__ import annotations
 
 import re
@@ -74,7 +74,7 @@ class FamilyFileGenerator:
             sites), `N` or `n` for no and `E` or `e` if you want to edit
             the collection of sites.
         :param verify: If a certificate verification fails, you may pass
-            `Y` or `y` to disable certificate validaton `N` or `n` to
+            `Y` or `y` to disable certificate validation `N` or `n` to
             keep it enabled.
         """
         from pywikibot.scripts import _import_with_no_user_config
@@ -100,7 +100,7 @@ class FamilyFileGenerator:
     @staticmethod
     def show(*args, **kwargs):
         """Wrapper around print to be mocked in tests."""
-        print(*args, **kwargs)
+        print(*args, **kwargs)  # pragma: no cover
 
     def get_params(self) -> bool:
         """Ask for parameters if necessary."""
@@ -171,7 +171,7 @@ class FamilyFileGenerator:
     def getlangs(self, w) -> None:
         """Determine site code of a family.
 
-        .. versionchanged:: 8.1
+        .. version-changed:: 8.1
            with [e]dit the interwiki list can be given delimited by
            space or comma or both. With [s]trict only sites with the
            same domain are collected. A [h]elp answer was added to show

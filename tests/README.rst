@@ -30,9 +30,11 @@ The entire suite of tests may be run in the following ways from the root directo
 
 **pytest**
 
+.. note:: Python 3.10 or higher is required to run pytest.
+
 ::
 
-    pip install pytest
+    pip install "pytest >= 9.0.3"
     pytest
 
 **tox**
@@ -45,7 +47,7 @@ Run specific tests
 ------------------
 
 Individual test components can be run using unittest, pytest or pwb.
-With -lang and -family or -site options pwb can be used to specify a site.
+With -code and -family or -site options pwb can be used to specify a site.
 
 
 **unittest**
@@ -69,7 +71,7 @@ With -lang and -family or -site options pwb can be used to specify a site.
     python pwb.py tests/api_tests -v
     python pwb.py tests/site_tests -v
     python pwb.py tests/api_tests -v TestParamInfo.test_init
-    python pwb.py -lang:de -family:wikipedia tests/page_tests -v TestPageObject
+    python pwb.py -site:wikipedia:de tests/page_tests -v TestPageObject
 
 **env**
 
@@ -124,10 +126,10 @@ Environment variables
         PYWIKIBOT_TEST_QUIET=1
 
 **PYWIKIBOT_TEST_RUNNING**
-  This environment variable skips tests instead of raising
+  This environment variable ignores some passwordfile checks in
+  :meth:`login.LoginManager.readPassword` and skips some tests instead of raising
   :exc:`exceptions.MaxlagTimeoutError` when maximum retries attempted due to
-  maxlag without success. It is also used by :source:`tests/script_tests` for code
-  coverage. GitHub actions and AppVeyor tests activate this variable::
+  maxlag without success. GitHub actions and Jenkins tests activate this variable::
 
     PYWIKIBOT_TEST_RUNNING=1
 
@@ -136,7 +138,7 @@ Environment variables
   write operations successfully.  These **will** write to the wikis, and they
   should always only write to 'test' wikis.
 
-  .. versionchanged:: 9.2
+  .. version-changed:: 9.2
      Enabling them will also enable 'edit failure' tests which attempt to write
      to the wikis and **should** fail. If there is a bug in pywikibot or
      MediaWiki, these tests **may** actually perform a write operation.
@@ -145,10 +147,10 @@ Environment variables
 
     PYWIKIBOT_TEST_WRITE=1
 
-.. versionremoved:: 9.2
+.. version-removed:: 9.2
    The :envvar:`PYWIKIBOT_TEST_WRITE_FAIL` environment variable; use
    :envvar:`PYWIKIBOT_TEST_WRITE` instead.
-.. versionremoved:: 9.5
+.. version-removed:: 9.5
    The :envvar:`PYWIKIBOT_TEST_GUI` environment variable.
 
 Instead of setting the environment by the os (or `os.environ` as well) you can use the :mod:`pwb`

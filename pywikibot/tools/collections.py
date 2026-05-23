@@ -1,9 +1,9 @@
-"""Collections datatypes."""
 #
-# (C) Pywikibot team, 2014-2025
+# (C) Pywikibot team, 2014-2026
 #
 # Distributed under the terms of the MIT license.
 #
+"""Collections datatypes."""
 from __future__ import annotations
 
 import collections
@@ -14,13 +14,8 @@ from itertools import chain
 from types import TracebackType
 from typing import Any, NamedTuple
 
-from pywikibot.backports import Generator as GeneratorType
 from pywikibot.exceptions import ArgumentDeprecationWarning
-from pywikibot.tools import (
-    PYTHON_VERSION,
-    deprecated_args,
-    issue_deprecation_warning,
-)
+from pywikibot.tools import deprecated_args, issue_deprecation_warning
 
 
 __all__ = (
@@ -68,7 +63,7 @@ class SizedKeyCollection(Collection):
         >>> list(data)
         []
 
-    .. versionadded:: 6.1
+    .. version-added:: 6.1
     """
 
     def __init__(self, keyattr: str) -> None:
@@ -149,7 +144,7 @@ class CombinedError(KeyError, IndexError):
 
     """An error that gets caught by both KeyError and IndexError.
 
-    .. versionadded:: 3.0
+    .. version-added:: 3.0
     """
 
 
@@ -164,8 +159,8 @@ class EmptyDefault(str, Mapping):
     Accessing a value via __getitem__ will result in a combined KeyError and
     IndexError.
 
-    .. versionadded:: 3.0
-    .. versionchanged:: 6.2
+    .. version-added:: 3.0
+    .. version-changed:: 6.2
        ``empty_iterator()`` was removed in favour of ``iter()``.
     """
 
@@ -190,8 +185,8 @@ class DequeGenerator(Iterator, collections.deque):
 
     """A generator that allows items to be added during generating.
 
-    .. versionadded:: 3.0
-    .. versionchanged:: 6.1
+    .. version-added:: 3.0
+    .. version-changed:: 6.1
        Provide a representation string.
     """
 
@@ -217,7 +212,7 @@ class GeneratorWrapper(ABC, Generator):
     <reference/expressions.html#generator.close>` mixin method and it can
     be used as Iterable and Iterator as well.
 
-    .. versionadded:: 7.6
+    .. version-added:: 7.6
 
     Example:
 
@@ -258,7 +253,7 @@ class GeneratorWrapper(ABC, Generator):
 
     @property
     @abstractmethod
-    def generator(self) -> GeneratorType[Any, Any, Any]:
+    def generator(self) -> Generator[Any, Any, Any]:
         """Abstract generator property."""
         yield from ()
 
@@ -276,7 +271,7 @@ class GeneratorWrapper(ABC, Generator):
 
         :raises TypeError: generator property is not a generator
         """
-        if not isinstance(self.generator, GeneratorType):
+        if not isinstance(self.generator, Generator):
             raise TypeError('generator property is not a generator but '
                             f'{type(self.generator).__name__}')
         if not hasattr(self, '_started_gen'):
@@ -295,10 +290,10 @@ class GeneratorWrapper(ABC, Generator):
         <reference/expressions.html#generator.throw>` for various
         parameter usage.
 
-        .. versionchanged:: 10.7
+        .. version-changed:: 10.7
            The *val* and *tb* parameters were renamed to *value* and
            *traceback*.
-        .. deprecated:: 10.7
+        .. version-deprecated:: 10.7
            The ``(type, value, traceback)`` signature is deprecated; use
            single-arg signature ``throw(value)`` instead.
 
@@ -314,8 +309,7 @@ class GeneratorWrapper(ABC, Generator):
             self._started_gen.throw(value)
             return
 
-        if PYTHON_VERSION > (3, 8) and not (value is None
-                                            and traceback is None):
+        if value is not None or traceback is not None:
             # Old-style (type, value, traceback) signature
             issue_deprecation_warning(
                 'The (type, value, traceback) signature of throw()',
@@ -370,7 +364,7 @@ class RateLimit(NamedTuple):
     >>> newlimit.ratio
     inf
 
-    .. versionadded:: 9.0
+    .. version-added:: 9.0
     """
 
     group: str = 'unknown'
