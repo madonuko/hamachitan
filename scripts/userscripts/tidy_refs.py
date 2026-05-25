@@ -17,14 +17,14 @@ from pywikibot.bot import ExistingPageBot
 # RE_DOMAIN = re.compile(r'^.+?://([^/]+)/?')
 RE_WEBARCHIVE = re.compile(r'^https://web\.archive\.org/web/(\d{4})(\d{2})(\d{2})')
 
-REQ_HEADERS = {'User-Agent': 'atl.wiki/User:Hamachitan', 'From': 'mado@fyralabs.com'}
+REQ_HEADERS = {'User-Agent': 'foss.wiki/User:Hamachitan', 'From': 'mado.n@foss.wiki'}
 DEAD_LINK_TEMPLATE = 'Dead Link'
 
 
 class TidyRefsBot(ExistingPageBot):
     update_options = {
         # 'text': 'text to update',
-        'summary': '/* References */ 🍣 Fix [[ATL:Guidelines#Citations|citations]]'
+        'summary': '/* References */ 🍣 Fix [[FW:Guidelines#Citations|citations]]'
     }
 
     def treat_page(self):
