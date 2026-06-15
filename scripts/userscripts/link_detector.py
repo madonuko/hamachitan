@@ -14,7 +14,18 @@ import typing
 REQ_HEADERS = {'User-Agent': 'atl.wiki/User:Hamachitan', 'From': 'mado@fyralabs.com'}
 DEAD_LINK_TEMPLATE = 'Dead Link'
 RE_TEMPLATE_SUFFIX = re.compile(r'{{Dead Link\|.+?}}$')
-
+WHITELIST_URLS = [re.compile(r) for r in [
+    r'doi\.org/10\.1016',
+    r'doi\.org/10\.1145',
+    r'doi\.org/10\.7717',
+    r'://distrowatch\.com',
+    r'://linux\.die\.net',
+    r'://www\.thefreedictionary\.com',
+    r'://frame\.work',
+    r'://pkgs\.org',
+    r'://unix.stackexchange.com',
+    r'://askubuntu.com/',
+]]
 
 class LinkDetectorBot(ExistingPageBot):
     update_options = {'summary': '🍣 Dead external links', 'timeout': 10}
@@ -70,23 +81,33 @@ class LinkDetectorBot(ExistingPageBot):
         nodes = []
         urls = []
         templates = []
+        finished = []
+        status_codes = []
         for node in wikicode.ifilter_external_links(recursive=True):
             if match := RE_TEMPLATE_SUFFIX.search(url := str(node.url).strip()):
                 match = match.group(0)
             templates.append(mw.parse(match).nodes[0] if match else None)
             url = url.removesuffix(match) if match else url
+            if self.skip_url(url):
+                print(f'SKIP: {url}')
+                tasks.append(None)
+                nodes.append(node)
+                urls.append(url)
+                finished.append(True)
+                status_codes.append('SKIP')
+                continue
             print(f'... : {url}')
             tasks.append(asyncio.create_task(self.check_head(url)))
             nodes.append(node)
             urls.append(url)
+            finished.append(False)
+            status_codes.append(None)
 
         # Wait for each task individually and update the status line
-        finished = [False] * len(tasks)
-        status_codes = [None] * len(tasks)
         head_fails = [False] * len(tasks)
         while not all(finished):
             for i, task in enumerate(tasks):
-                if finished[i] or not task.done():
+                if finished[i] or task is None or not task.done():
                     continue
                 status_codes[i] = status_code = self.mangle_status(task.result())
                 print(end=f'\033[{len(tasks) - i}A')
@@ -114,8 +135,9 @@ class LinkDetectorBot(ExistingPageBot):
         print()
 
         for i, url in enumerate(urls):
+            if status_codes[i] == 'SKIP': continue
             if template := templates[i] or self.find_template(wikicode, nodes[i]):
-                if (reason := template.params[1]) == str(status_codes[i]):
+                if (reason := template.params[1]) == str(status_codes[i]) or reason == f'<nowiki>{status_codes[i]}</nowiki>':
                     continue
                 if (
                     isinstance(reason, str)
@@ -171,6 +193,8 @@ class LinkDetectorBot(ExistingPageBot):
         return None
 
     def make_dead_link_template(self, day: str, reason: str):
+        if any(x in reason for x in '[]'):
+            reason = f'<nowiki>{reason}</nowiki>'
         return mw.parse(f'{{{{{DEAD_LINK_TEMPLATE}|{day}|{reason}}}}}')
 
     @staticmethod
@@ -188,6 +212,12 @@ class LinkDetectorBot(ExistingPageBot):
         print()
         return input('Mark as dead? (Y/n): ').lower().strip() in ['y', '']
 
+    @staticmethod
+    def skip_url(url: str) -> bool:
+        for r in WHITELIST_URLS:
+            if r.search(url) is not None:
+                return True
+        return False
 
 def main(*args: str) -> None:
     """Parse command line arguments and invoke bot."""
